@@ -21,7 +21,7 @@ export default function Content({
   const [openBuyModal, setOpenBuyModal] = useState<boolean>(false);
   useEffect(() => {
     const snapScript = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ?? "";
-    const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
     const script = document.createElement("script");
     script.src = snapScript;
     script.setAttribute("data-client-key", clientKey!);

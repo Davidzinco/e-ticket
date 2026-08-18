@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
   } = body;
   try {
     if (["expire", "cancel", "deny"].includes(transaction_status)) {
-      await fetch(`${process.env.NEXT_PUBLIC_NEXTAUTH_URL}/api/event`, {
+      const baseUrl = process.env.NEXT_PUBLIC_NEXTAUTH_URL || "http://localhost:3000";
+      await fetch(`${baseUrl}/api/event`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

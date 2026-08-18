@@ -8,6 +8,41 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
+  const hasFirebaseCredentials =
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+  if (!hasFirebaseCredentials) {
+    const mockEvents = [
+      {
+        id: "5W7jcnr28tGc5E8tywRl",
+        title: "Bhirawa Night Carnival 2025",
+        sub_title: "BNC 2025",
+        description: "Bhirawa Night Carnival (BNC) 2025 adalah festival seni dan budaya tahunan SMA Negeri 1 Madiun.",
+        isSoldOut: false,
+        location: "Gedung Olahraga Wilis Madiun",
+        price: 35000,
+        src: "https://sman1madiun.sch.id/wp-content/uploads/2024/10/logo-banner.png",
+        ticket: 150,
+        timestamp: {
+          seconds: Math.floor(Date.now() / 1000),
+          nanoseconds: 0,
+        },
+        closeTime: {
+          seconds: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+          nanoseconds: 0,
+        },
+      }
+    ];
+
+    const searchParams = req.nextUrl.searchParams.get("id");
+    if (searchParams) {
+      const found = mockEvents.find(e => e.id === searchParams);
+      return NextResponse.json(found || null);
+    }
+    return NextResponse.json(mockEvents);
+  }
+
   const searchParams = req.nextUrl.searchParams.get("id");
   if (searchParams) {
     const data = await retrieveDataById("event", searchParams);

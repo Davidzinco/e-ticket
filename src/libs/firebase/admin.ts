@@ -1,15 +1,29 @@
-import admin from "firebase-admin";
-import { getAuth } from "firebase-admin/auth";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
+const hasFirebaseAdminCredentials =
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+  process.env.FIREBASE_CLIENT_EMAIL &&
+  process.env.FIREBASE_PRIVATE_KEY;
+
+if (!getApps().length) {
+  if (hasFirebaseAdminCredentials) {
+    initializeApp({
+      credential: cert({
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      }),
+    });
+  } else {
+    console.warn("⚠️ Firebase Admin credentials are not set. Firebase Admin features will fail if accessed.");
+  }
 }
 
-export const db = admin.firestore();
-export const adminAuth = getAuth();
+export const db: Firestore = getApps().length
+  ? getFirestore()
+  : (null as unknown as Firestore);
+export const adminAuth: Auth = getApps().length
+  ? getAuth()
+  : (null as unknown as Auth);
