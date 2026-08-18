@@ -26,7 +26,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
+  const hasAuthConfig =
+    process.env.NEXTAUTH_SECRET &&
+    process.env.GOOGLE_OAUTH_CLIENT_ID &&
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const session = hasAuthConfig ? await getServerSession(authOptions) : null;
   return (
     <ViewTransitions>
       <html lang="en">
