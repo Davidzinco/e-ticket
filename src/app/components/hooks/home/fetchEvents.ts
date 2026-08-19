@@ -1,9 +1,6 @@
 export async function FetchEvents() {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_NEXTAUTH_URL ||
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000");
+  const baseUrl = process.env.NEXT_PUBLIC_NEXTAUTH_URL 
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
   const res = await fetch(`${baseUrl}/api/event`, {
     next: { revalidate: 60 },
   });

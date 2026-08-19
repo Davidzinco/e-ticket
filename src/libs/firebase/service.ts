@@ -19,13 +19,22 @@ import { firestore } from "./init";
 
 export async function retrieveData(collectionName: string) {
   const snapshot = await getDocs(collection(firestore, collectionName));
-  const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const data = snapshot.docs.map((doc) => {
+    const rawData = doc.data() as any;
+    if (rawData && rawData.isSoldout !== undefined) {
+      rawData.isSoldOut = rawData.isSoldout;
+    }
+    return { id: doc.id, ...rawData };
+  });
   return data;
 }
 
 export async function retrieveDataById(collectionName: string, id: string) {
   const snapshot = await getDoc(doc(firestore, collectionName, id));
-  const data = snapshot.data();
+  const data = snapshot.data() as any;
+  if (data && data.isSoldout !== undefined) {
+    data.isSoldOut = data.isSoldout;
+  }
   return data;
 }
 
@@ -39,10 +48,16 @@ export async function retrieveDataByField(
     where(field, "==", value)
   );
   const snapshot = await getDocs(q);
-  const data = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  const data = snapshot.docs.map((doc) => {
+    const rawData = doc.data() as any;
+    if (rawData && rawData.isSoldout !== undefined) {
+      rawData.isSoldOut = rawData.isSoldout;
+    }
+    return {
+      id: doc.id,
+      ...rawData,
+    };
+  });
   return data;
 }
 

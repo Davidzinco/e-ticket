@@ -1,8 +1,17 @@
 "use client";
 import { Link } from "next-view-transitions";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 export default function SuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <SuccessContent />
+    </Suspense>
+  );
+}
+
+function SuccessContent() {
   const searchParams = useSearchParams();
   const transactionStatus = searchParams.get("transaction_status");
   const statusCode = searchParams.get("status_code");
