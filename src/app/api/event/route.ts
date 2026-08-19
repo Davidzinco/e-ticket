@@ -7,6 +7,8 @@ import {
 } from "@/libs/firebase/service";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams.get("id");
