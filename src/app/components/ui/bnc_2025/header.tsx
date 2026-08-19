@@ -11,9 +11,17 @@ export default function Header({
   location: string;
   date: Date;
 }) {
-  const dateConvert = date.toLocaleDateString("id-ID").split("/").join("-");
+  const dateConvert = date
+    .toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })
+    .split("/")
+    .join("-");
   const timeConvert = date
-    .toLocaleTimeString("id-ID")
+    .toLocaleTimeString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
     .split(".")
     .slice(0, 2)
     .join(":");
