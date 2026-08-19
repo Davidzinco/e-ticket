@@ -35,14 +35,16 @@ export default function Navbar({
   if (!mounted) return null;
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 h-[3.5rem] transition-all duration-500 z-[999] ${
-        scrollY > 0 ? "shadow-xl backdrop-blur-sm" : "shadow-none"
-      } ${isFixHeight && "shadow-xl backdrop-blur-sm"} bg-linear-to-b`}
+      className={`fixed top-0 left-0 right-0 h-14 transition-all duration-300 z-[999] ${
+        scrollY > 10
+          ? "bg-black/80 backdrop-blur-2xl border-b border-white/[0.08]"
+          : "bg-black/40 backdrop-blur-md border-b border-transparent"
+      } ${isFixHeight && "bg-black/85 backdrop-blur-2xl border-b border-white/[0.08]"}`}
     >
-      <div className="w-full h-full flex justify-between px-7 items-center text-xl text-orange-300">
+      <div className="max-w-6xl mx-auto w-full h-full flex justify-between px-6 items-center">
         {isAdmin ? (
-          <h1
-            className="font-bold cursor-pointer"
+          <div
+            className="flex items-center gap-2 cursor-pointer group"
             onClick={() => {
               if (path == "/admin") return;
               router.push("/admin", {
@@ -50,52 +52,66 @@ export default function Navbar({
               });
             }}
           >
-            Admin Panel
-          </h1>
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span className="text-sm font-semibold tracking-tight text-white/90 group-hover:text-white transition-colors">
+              Admin Portal
+            </span>
+          </div>
         ) : (
-          <Image
-            className="font-bold cursor-pointer"
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
             onClick={() => {
               if (path == "/") return;
               router.push("/", {
                 onTransitionReady: PageAnimation,
               });
             }}
-            src="/images/smasa.webp"
-            alt="logo smasa"
-            width={40}
-            height={50}
-          ></Image>
+          >
+            <Image
+              className="opacity-90 group-hover:opacity-100 transition-opacity"
+              src="/images/smasa.webp"
+              alt="SMAN 1 Madiun"
+              width={26}
+              height={26}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold tracking-tight text-white/90">SMAN 1 Madiun</span>
+              <span className="text-white/20 text-xs">/</span>
+              <span className="text-xs text-white/60 font-medium">E-Ticket</span>
+            </div>
+          </div>
         )}
-        <div>
+
+        <div className="flex items-center gap-3">
           {isAdmin ? (
-            <div className="flex gap-3 items-center text-blue-400">
+            <div className="flex gap-3 items-center">
               {name && (
-                <p
-                  className={`text-md ${
+                <span
+                  className={`text-xs text-white/60 font-medium ${
                     windowWidth <= 400
                       ? "max-w-[70px] truncate"
-                      : "max-w-[500px] truncate"
+                      : "max-w-[300px] truncate"
                   }`}
                 >
                   {name}
-                </p>
+                </span>
               )}
               <button
-                className="bg-orange-200 p-1 px-4 rounded-md text-orange-500 text-[16px] cursor-pointer hover:bg-orange-200/70"
+                className="bg-white/10 hover:bg-white/15 text-white text-xs font-medium py-1.5 px-3.5 rounded-full transition-all duration-150 cursor-pointer active:scale-95 border border-white/10"
                 onClick={() =>
                   signOut({
                     callbackUrl: "/auth/login",
                   })
                 }
               >
-                Logout
+                Sign out
               </button>
             </div>
           ) : (
-            <h1 className="font-bold text-base tracking-wider text-yellow-500 font-logo">
-              BHIMACREW
-            </h1>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/70 animate-pulse"></span>
+              <span className="text-[10px] tracking-[0.2em] uppercase text-white/40 font-medium">Live</span>
+            </div>
           )}
         </div>
       </div>

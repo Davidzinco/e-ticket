@@ -157,52 +157,72 @@ export default function Content({
               />
             </section>
 
-            {/* container description */}
-            <div className="bg-transparent max-w-3xl mx-auto text-justify relative z-[10] mt-52">
-              <div className="border p-4 rounded-xl">
-                <div className="absolute left-0 top-0 w-full h-full bg-[#3e042c] blur-xl rounded-2xl z-[-1]"></div>
-                <p className="text-white sm:text-2xl sm:leading-[32px]">
-                  {detailEvent.description}
+          {/* container description */}
+            <div className="bg-transparent max-w-3xl mx-auto relative z-[10] mt-40 sm:mt-48 w-full">
+              <div className="relative p-5 sm:p-9 rounded-3xl bg-[#121417] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-[11px] font-medium tracking-wide text-[#e5c378] uppercase mb-3">
+                  Detail Acara
+                </div>
+                <p className="text-[#f5f5f7] text-sm sm:text-lg sm:leading-relaxed font-normal text-justify">
+                  {detailEvent.description || "Festival Bhima Night Carnival menghadirkan pertunjukan seni akbar, kolaborasi musik, dan kehangatan kebersamaan keluarga besar SMA Negeri 1 Madiun."}
                 </p>
+
+                <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between">
+                  <span className="text-xs text-[#86868b] font-medium">Ketersediaan</span>
+                  {isSoldOut ? (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                      Tiket Habis
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {detailEvent.ticket} Tiket Tersedia
+                    </span>
+                  )}
+                </div>
               </div>
-              {isSoldOut ? (
-                <p className="text-center sm:text-lg text-[13px] text-yellow-400/90 mt-3">
-                  {`Ticket Sudah Habis!`}
-                </p>
-              ) : (
-                <p className="text-center sm:text-lg text-[13px] text-yellow-400/90 mt-3">
-                  {`Sisa Tiket : ${detailEvent.ticket}`}
-                </p>
-              )}
             </div>
-            {/* container form */}
+
+            {/* Checkout Bar — sticky on mobile, normal on desktop */}
             <form
               action=""
               onSubmit={(e) => handleBuyTicket(e)}
-              className="bg-transparent relative flex flex-col p-5 gap-7 rounded-xl mx-auto w-full max-w-3xl z-10 text-white"
+              className="fixed sm:relative bottom-0 left-0 right-0 sm:bottom-auto sm:mt-4 sm:mb-20 z-50 sm:z-10 sm:max-w-3xl sm:mx-auto sm:rounded-3xl sm:w-full"
             >
-              <div className="absolute left-0 top-0 w-full h-full bg-[#3e042c] blur-xl rounded-2xl z-[-1]"></div>
-              <aside className="w-full rounded-lg flex justify-between items-center">
-                <Counter
-                  maxCount={isSoldOut ? 0 : detailEvent.ticket}
-                  count={count}
-                  setCount={setCount}
-                />
-                <div className="flex gap-2 sm:gap-5 items-center">
-                  <p className="text-white sm:text-xl">
-                    {toIdr(event?.price * count)}
-                  </p>
-                  <button
-                    disabled={count > detailEvent.ticket || isSoldOut}
-                    type="submit"
-                    className={`bg-[#873567] py-1 rounded-lg text-white cursor-pointer hover:bg-[#873567]/80 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed sm:text-xl ${
-                      isSoldOut ? "px-3" : "px-4"
-                    }`}
-                  >
-                    {isSoldOut ? "Tiket Habis" : "Beli Tiket"}
-                  </button>
+              <div className="p-4 sm:p-5 sm:rounded-3xl bg-[#16181b] border-t sm:border border-white/[0.12] sm:shadow-[0_12px_40px_rgba(0,0,0,0.5)] pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-5 text-[#f5f5f7]">
+                <div className="flex items-center justify-between gap-3">
+                  {/* Left: counter */}
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[11px] font-medium text-[#86868b] hidden xs:block">Jumlah</span>
+                    <Counter
+                      maxCount={isSoldOut ? 0 : detailEvent.ticket}
+                      count={count}
+                      setCount={setCount}
+                    />
+                  </div>
+
+                  {/* Right: price + buy button */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col text-right">
+                      <span className="text-[9px] text-[#86868b] uppercase font-medium tracking-wide">Total</span>
+                      <p className="text-base sm:text-xl font-bold text-[#f5f5f7] tracking-tight">
+                        {toIdr(event?.price * count)}
+                      </p>
+                    </div>
+
+                    <button
+                      disabled={count > detailEvent.ticket || isSoldOut}
+                      type="submit"
+                      className={`py-2.5 px-5 rounded-full font-semibold text-sm transition-all duration-150 cursor-pointer active:scale-95 whitespace-nowrap ${
+                        isSoldOut
+                          ? "bg-white/10 text-white/40 cursor-not-allowed"
+                          : "bg-white text-black hover:bg-[#e5e5ea]"
+                      }`}
+                    >
+                      {isSoldOut ? "Habis" : "Beli →"}
+                    </button>
+                  </div>
                 </div>
-              </aside>
+              </div>
             </form>
           </section>
         </main>

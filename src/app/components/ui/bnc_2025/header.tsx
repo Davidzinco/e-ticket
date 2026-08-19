@@ -27,68 +27,62 @@ export default function Header({
     .join(":");
 
   return (
-    <header className="relative bg-linear-to-t from-[#18893c] from-20% to-[#8ee822] border-b-4 border-[#ffb64d] z-[1]">
-      <section className="flex flex-col items-center w-full text-center min-h-[180px] mx-auto">
-        <main className="w-full flex">
-          <div className="relative w-full h-[300px] overflow-hidden max-md:hidden">
+    <header className="relative bg-black border-b border-white/[0.08] z-[10]">
+      <section className="flex flex-col items-center w-full text-center mx-auto relative pb-12">
+        {/* Gallery Image Showcase */}
+        <main className="w-full flex relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30 z-10 pointer-events-none"></div>
+
+          {/* Only show side images on medium+ screens */}
+          <div className="relative w-full h-[200px] sm:h-[300px] overflow-hidden max-md:hidden">
             <Image
               src="/images/bnc_2025/gambar2.webp"
-              alt="gambar1"
+              alt="Festival Showcase 1"
               fill
-              className="object-cover object-center"
+              className="object-cover object-center filter brightness-[0.85] contrast-[1.05]"
             />
           </div>
 
-          <div className="relative w-full h-[300px] overflow-hidden">
+          {/* Main image — always visible */}
+          <div className="relative w-full h-[220px] sm:h-[300px] overflow-hidden">
             <Image
               src="/images/bnc_2025/gambar1.webp"
-              alt="gambar2"
+              alt="Festival Stage Showcase"
               fill
-              className="object-cover object-center"
+              className="object-cover object-center filter brightness-[0.95] contrast-[1.05]"
             />
           </div>
 
-          <div className="relative w-full h-[300px] overflow-hidden max-lg:hidden">
+          <div className="relative w-full h-[200px] sm:h-[300px] overflow-hidden max-lg:hidden">
             <Image
               src="/images/bnc_2025/gambar3.webp"
-              alt="gambar3"
+              alt="Festival Showcase 2"
               fill
-              className="object-cover object-center"
+              className="object-cover object-center filter brightness-[0.85] contrast-[1.05]"
             />
           </div>
         </main>
 
-        <div className="absolute bottom-0 translate-y-1/2 mx-auto border-2 border-[#ffb64d] bg-[#770b4d] text-white flex gap-4 p-2 rounded-lg shadow-xl max-sm:text-sm">
-          <h1 className="flex gap-1 sm:gap-2 items-center sm:text-xl">
-            <Image
-              src="/icons/redLocation.webp"
-              alt="pin"
-              width={100}
-              height={100}
-              className="max-w-[17px] max-h-[17px] w-full sm:max-w-[20px] sm:max-h-[20px]"
-            />
-            <span>{location}</span>
-          </h1>
-          <h1 className="flex gap-1 sm:gap-2 items-center sm:text-xl">
-            <Image
-              src="/icons/calendar.png"
-              alt="pin"
-              width={100}
-              height={100}
-              className="max-w-[19px] max-h-[19px] w-full sm:max-w-[21px] sm:max-h-[21px]"
-            />
-            <span>{dateConvert}</span>
-          </h1>
-          <h1 className="flex gap-1 sm:gap-2 items-center sm:text-xl">
-            <Image
-              src="/icons/clock.png"
-              alt="pin"
-              width={100}
-              height={100}
-              className="max-w-[20px] max-h-[20px] w-full sm:max-w-[22px] sm:max-h-[22px]"
-            />
-            <span>{timeConvert}</span>
-          </h1>
+        {/* Metadata Capsule — stacks vertically on mobile */}
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-xl border border-white/[0.12] bg-[#121417]/90 backdrop-blur-2xl text-[#f5f5f7] flex flex-col sm:flex-row flex-wrap justify-around items-center gap-1.5 sm:gap-3 py-3 px-5 sm:px-6 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-20">
+          <div className="flex items-center gap-2 text-xs font-medium w-full sm:w-auto justify-center">
+            <span className="text-[#86868b]">Lokasi</span>
+            <span className="text-white font-semibold">{location}</span>
+          </div>
+
+          <div className="hidden sm:block w-px h-3.5 bg-white/[0.12]"></div>
+
+          <div className="flex items-center gap-2 text-xs font-medium w-full sm:w-auto justify-center">
+            <span className="text-[#86868b]">Tanggal</span>
+            <span className="text-[#e5c378] font-semibold">{dateConvert}</span>
+          </div>
+
+          <div className="hidden sm:block w-px h-3.5 bg-white/[0.12]"></div>
+
+          <div className="flex items-center gap-2 text-xs font-medium w-full sm:w-auto justify-center">
+            <span className="text-[#86868b]">Waktu</span>
+            <span className="text-white font-semibold">{timeConvert} WIB</span>
+          </div>
         </div>
       </section>
     </header>
