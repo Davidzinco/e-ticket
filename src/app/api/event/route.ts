@@ -17,9 +17,9 @@ export async function GET(req: NextRequest) {
     const mockEvents = [
       {
         id: "5W7jcnr28tGc5E8tywRl",
-        title: "Bhirawa Night Carnival 2025",
-        sub_title: "BNC 2025",
-        description: "Bhirawa Night Carnival (BNC) 2025 adalah festival seni dan budaya tahunan SMA Negeri 1 Madiun.",
+        title: "Bhima Night Carnival 2026",
+        sub_title: "BNC 2026",
+        description: "Bhima Night Carnival (BNC) 2026 adalah festival seni dan budaya tahunan SMA Negeri 1 Madiun.",
         isSoldOut: false,
         location: "Gedung Olahraga Wilis Madiun",
         price: 35000,
