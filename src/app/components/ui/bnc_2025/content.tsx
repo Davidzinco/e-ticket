@@ -121,7 +121,7 @@ export default function Content({
               />
 
               <Image
-                src={"/images/bnc_2025/bhima_night_carnival.webp"}
+                src={"/images/bnc_2025/bhima_night_carnival26.webp"}
                 alt="bnc"
                 width={1000}
                 height={1000}
