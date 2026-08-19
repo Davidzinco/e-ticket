@@ -25,7 +25,10 @@ export default function Card({
   isSoldOut?: boolean;
 }) {
   const router = useTransitionRouter();
-  const dateConvert = date.toLocaleDateString("id-ID").split("/").join("-");
+  const dateConvert = date
+    .toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })
+    .split("/")
+    .join("-");
   return (
     <motion.div
       key={keyId}
