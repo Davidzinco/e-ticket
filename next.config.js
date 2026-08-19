@@ -3,7 +3,7 @@ const nextConfig = {
   images: {
     domains: ["sman1madiun.sch.id"],
   },
-  serverExternalPackages: ["firebase-admin"],
+  serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
 };
 
 module.exports = nextConfig;
