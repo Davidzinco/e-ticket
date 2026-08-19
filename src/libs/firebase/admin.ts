@@ -1,5 +1,4 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 const hasFirebaseAdminCredentials =
@@ -24,6 +23,3 @@ if (!getApps().length) {
 export const db: Firestore = getApps().length
   ? getFirestore()
   : (null as unknown as Firestore);
-export const adminAuth: Auth = getApps().length
-  ? getAuth()
-  : (null as unknown as Auth);
