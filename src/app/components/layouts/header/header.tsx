@@ -1,43 +1,53 @@
 "use client";
 import React from "react";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface HeaderProps {
   currentView?: string;
-  onBack?: () => void;
   title?: string;
 }
 
 export default function Header({
-  currentView,
-  onBack,
   title = "BNC",
 }: HeaderProps) {
-  const router = useRouter();
+  const handleShare = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = {
+      title: "Bhima Night Carnival 2026 - E-Ticket",
+      text: "Dapatkan tiket resmi Bhima Night Carnival (BNC) sekarang!",
+      url,
+    };
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // Abaikan jika user membatalkan share dialog
+        if (err instanceof Error && err.name !== "AbortError") {
+          fallbackCopy(url);
+        }
+      }
     } else {
-      router.back();
+      fallbackCopy(url);
+    }
+  };
+
+  const fallbackCopy = async (url: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Tautan berhasil disalin ke papan klip!");
+      } catch {
+        toast.error("Gagal menyalin tautan");
+      }
+    } else {
+      toast.info(`Salin tautan: ${url}`);
     }
   };
 
   return (
     <header className="fixed top-0 w-full z-50 bg-surface shadow-sm border-b border-outline-variant flex items-center justify-between px-4 sm:px-6 h-16 transition-colors duration-200 text-on-surface">
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleBack}
-          aria-label="Back"
-          className="text-on-surface-variant hover:bg-surface-container active:scale-95 p-2 rounded-full transition-colors flex items-center justify-center cursor-pointer"
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{ fontVariationSettings: "'FILL' 0" }}
-          >
-            arrow_back
-          </span>
-        </button>
         <span
           className="text-xl font-extrabold text-primary"
           style={{ color: "rgb(56, 105, 72)" }}
@@ -46,14 +56,16 @@ export default function Header({
         </span>
       </div>
       <button
-        aria-label={currentView === "payment" ? "Help" : "Share"}
+        onClick={handleShare}
+        aria-label="Share"
         className="text-on-surface-variant hover:bg-surface-container active:scale-95 p-2 rounded-full transition-colors flex items-center justify-center cursor-pointer"
+        title="Bagikan"
       >
         <span
           className="material-symbols-outlined"
           style={{ fontVariationSettings: "'FILL' 0" }}
         >
-          {currentView === "payment" ? "help_outline" : "share"}
+          share
         </span>
       </button>
     </header>

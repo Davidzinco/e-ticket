@@ -1,11 +1,5 @@
-import { FetchEvents } from "./components/hooks/home/fetchEvents";
-import HomeView from "./components/views/home/homeView";
+import { redirect } from "next/navigation";
 
-export default async function HomePage() {
-  try {
-    const events = await FetchEvents();
-    return <HomeView events={events} hasError={false} />;
-  } catch {
-    return <HomeView events={[]} hasError={true} />;
-  }
+export default function HomePage() {
+  redirect("/detail/5W7jcnr28tGc5E8tywRl");
 }
