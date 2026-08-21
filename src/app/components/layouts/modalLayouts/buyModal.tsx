@@ -21,6 +21,7 @@ export default function BuyModal({
   }>({});
   const [isConfirm, setIsConfirm] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isConfirm) {
@@ -87,12 +88,10 @@ export default function BuyModal({
       window?.snap?.pay(reqData?.token?.token, {
         async onError() {
           await handleFail(orderId);
-
           mutate();
         },
         async onClose() {
           await handleFail(orderId);
-
           mutate();
         },
       });
@@ -114,22 +113,59 @@ export default function BuyModal({
       }),
     }).catch(() => toast.error("Ups Terjadi Kesalahan"));
   };
+
   return (
-    <Modal onClose={onClose} className="bg-[#16263b] border border-[#213145] text-[#f8f9ff] max-w-lg w-full p-6 sm:p-7 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.7)]">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4f46e5]/15 border border-[#4f46e5]/30 text-[#c3c0ff] text-[10px] font-bold uppercase tracking-wider mb-2">
-            <span>Checkout Tiket</span>
+    <Modal onClose={onClose} className="bg-[#16263b] border border-[#213145] text-[#f8f9ff] max-w-lg w-full p-6 sm:p-7 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.8)]">
+      {/* Stitch Progress Indicator */}
+      <div className="flex items-center justify-center w-full mb-5 pb-4 border-b border-[#213145]">
+        <div className="flex items-center text-[#c3c0ff]">
+          <div className="w-7 h-7 rounded-full bg-[#4f46e5] text-white flex items-center justify-center font-bold text-xs shadow-md">
+            1
           </div>
-          <h2 className="font-extrabold text-2xl text-white tracking-tight">
-            Data Pemesan
+          <span className="ml-2 font-bold text-xs text-white">Identitas</span>
+        </div>
+        <div className="flex-1 h-[2px] bg-[#4f46e5] mx-3 max-w-[60px]"></div>
+        <div className="flex items-center text-[#9aa4bc]">
+          <div className="w-7 h-7 rounded-full bg-[#0b1c30] text-[#9aa4bc] flex items-center justify-center font-bold text-xs border border-[#213145]">
+            2
+          </div>
+          <span className="ml-2 font-bold text-xs text-[#9aa4bc]">Pembayaran</span>
+        </div>
+        <div className="flex-1 h-[2px] bg-[#213145] mx-3 max-w-[60px]"></div>
+        <div className="flex items-center text-[#9aa4bc] opacity-50">
+          <div className="w-7 h-7 rounded-full bg-[#0b1c30] text-[#777587] flex items-center justify-center font-bold text-xs border border-[#213145]">
+            3
+          </div>
+          <span className="ml-2 font-bold text-xs text-[#777587] hidden sm:inline">Selesai</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4f46e5]/15 border border-[#4f46e5]/30 text-[#c3c0ff] text-[10px] font-bold uppercase tracking-wider mb-1.5">
+            <span>Pembayaran Aman QRIS</span>
+          </div>
+          <h2 className="font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+            Checkout Tiket
           </h2>
-          <p className="text-xs text-[#9aa4bc] mt-1">
-            Lengkapi nama dan email untuk penerbitan tiket resmi.
+          <p className="text-xs text-[#9aa4bc] mt-0.5">
+            Isi data identitas pengunjung di bawah ini untuk penerbitan tiket resmi.
           </p>
         </div>
 
-        <section className="max-h-[48dvh] overflow-y-auto pr-1 flex flex-col gap-3 custom-scrollbar">
+        {/* Ticket Stub Mask Summary Header */}
+        <div className="relative bg-[#0b1c30] border border-[#213145] p-3.5 rounded-xl ticket-stub-mask flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-white">{event?.title || "Bhima Night Carnival"}</span>
+            <span className="text-[11px] text-[#c3c0ff] font-semibold">{count}x VIP Pass • Bhima Arena</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-[#9aa4bc] uppercase block font-bold">Total</span>
+            <span className="text-sm font-extrabold text-[#c3c0ff]">Rp {((event?.price || 0) * count).toLocaleString("id-ID")}</span>
+          </div>
+        </div>
+
+        <section className="max-h-[38dvh] overflow-y-auto pr-1 flex flex-col gap-3 custom-scrollbar">
           {Array.from({ length: count }, (_, index) => (
             <div key={index} className="p-3.5 rounded-xl bg-[#0b1c30] border border-[#213145]">
               <div className="flex justify-between items-center mb-1.5">
@@ -141,7 +177,7 @@ export default function BuyModal({
                 </label>
                 {count > 1 && index === 0 && (
                   <Tooltip label="Nama ini digunakan sebagai kontak utama pembeli">
-                    <span className="text-[11px] font-bold text-[#4f46e5] bg-[#4f46e5]/15 px-2 py-0.5 rounded-md border border-[#4f46e5]/30">
+                    <span className="text-[10px] font-bold text-[#4f46e5] bg-[#4f46e5]/15 px-2 py-0.5 rounded-md border border-[#4f46e5]/30">
                       Kontak Utama
                     </span>
                   </Tooltip>
@@ -168,7 +204,7 @@ export default function BuyModal({
 
         <div className="p-3.5 rounded-xl bg-[#0b1c30] border border-[#213145]">
           <label htmlFor="email" className="block text-xs font-bold text-[#c3c0ff] mb-1.5">
-            Email Pengiriman Tiket QR
+            Email Aktif (Pengiriman Tiket QR)
           </label>
           <input
             type="email"
@@ -192,11 +228,16 @@ export default function BuyModal({
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-[#4f46e5] text-white hover:bg-[#3525cd] font-bold text-xs sm:text-sm py-2.5 px-6 rounded-lg shadow-md shadow-[#4f46e5]/30 cursor-pointer active:scale-95 disabled:bg-[#213145] disabled:text-[#777587] disabled:cursor-not-allowed transition-all"
+            className="bg-[#4f46e5] text-white hover:bg-[#3525cd] font-bold text-xs sm:text-sm py-2.5 px-6 rounded-lg shadow-md shadow-[#4f46e5]/30 cursor-pointer active:scale-95 disabled:bg-[#213145] disabled:text-[#777587] disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
           >
-            {isLoading ? "Memproses..." : isConfirm ? "Konfirmasi & Bayar" : "Lanjut Pembayaran"}
+            <span>{isLoading ? "Memproses..." : isConfirm ? "Lanjut ke QRIS" : "Proses Pembayaran"}</span>
+            <span>→</span>
           </button>
         </div>
+
+        <p className="text-[10px] text-center text-[#777587] mt-1 flex items-center justify-center gap-1">
+          <span>🔒 Pembayaran terenkripsi & aman via Midtrans / QRIS</span>
+        </p>
       </form>
     </Modal>
   );

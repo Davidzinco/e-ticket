@@ -220,3 +220,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+.ticket-stub-mask {
+  mask-image: radial-gradient(circle at 0 50%, transparent 8px, black 8.5px), radial-gradient(circle at 100% 50%, transparent 8px, black 8.5px);
+  mask-size: 51% 100%;
+  mask-repeat: no-repeat;
+  mask-position: left, right;
+  -webkit-mask-image: radial-gradient(circle at 0 50%, transparent 8px, black 8.5px), radial-gradient(circle at 100% 50%, transparent 8px, black 8.5px);
+  -webkit-mask-size: 51% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: left, right;
+}
+
+.soft-shadow, .custom-shadow {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.ambient-shadow {
+  box-shadow: 0 4px 12px rgba(24, 29, 23, 0.06);
+}
