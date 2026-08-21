@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import Modal from "../../common/modal";
 import { EventInterface } from "../../interfaces/event";
 import { v4 as uuidv4 } from "uuid";
-import { Tooltip } from "../../common/toolTip";
 
 export default function BuyModal({
   onClose,
@@ -19,13 +18,11 @@ export default function BuyModal({
 }) {
   const [ticketQuantity, setTicketQuantity] = useState<number>(initialCount);
   const [isUsernameErr, setIsUsernameErr] = useState<{ [key: number]: boolean }>({});
-  const [isNikErr, setIsNikErr] = useState<{ [key: number]: boolean }>({});
+  const [isNikErr, setIsNikErr] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const ticketPrice = event?.price || 0;
   const totalAmount = ticketPrice * ticketQuantity;
-
-  // Tidak ada batasan maksimal buatan (hanya dibatasi oleh sisa stok di Firebase jika ada)
   const maxTickets = event?.ticket && event.ticket > 0 ? event.ticket : 999;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -36,33 +33,31 @@ export default function BuyModal({
     const usernameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
     const nikRegex = /^[0-9]{10,20}$/;
 
+    // Validasi Nama Setiap Pengunjung
     const newErrors: { [key: number]: boolean } = {};
-    const newNikErrors: { [key: number]: boolean } = {};
-
     for (let i = 0; i < ticketQuantity; i++) {
       const name = (formData.get(`name${i}`) as string)?.trim() || "";
-      const nik = (formData.get(`nik${i}`) as string)?.trim() || "";
-
       newErrors[i] = !usernameRegex.test(name);
-      newNikErrors[i] = !nikRegex.test(nik);
     }
-
     setIsUsernameErr(newErrors);
-    setIsNikErr(newNikErrors);
 
     const hasNameError = Object.values(newErrors).some((v) => v);
-    const hasNikError = Object.values(newNikErrors).some((v) => v);
-
     if (hasNameError) {
       setIsLoading(false);
-      return toast.error("Nama pengunjung wajib diisi (3-50 karakter)");
+      return toast.error("Nama semua pengunjung wajib diisi (3-50 karakter)");
     }
+
+    // Validasi NIK Kontak Utama (Hanya 1 kali)
+    const primaryNik = (formData.get("nik") as string)?.trim() || "";
+    const hasNikError = !nikRegex.test(primaryNik);
+    setIsNikErr(hasNikError);
 
     if (hasNikError) {
       setIsLoading(false);
-      return toast.error("NIK harus berupa 16 digit angka valid (KTP / KK / Kartu Pelajar)");
+      return toast.error("NIK kontak utama wajib diisi dengan 16 digit angka valid");
     }
 
+    // Validasi Email
     const email = (formData.get("email") as string)?.trim() || "";
     if (!email || !email.includes("@")) {
       setIsLoading(false);
@@ -75,10 +70,6 @@ export default function BuyModal({
         { length: ticketQuantity },
         (_, i) => (formData.get(`name${i}`) as string)?.trim()
       );
-      const niks = Array.from(
-        { length: ticketQuantity },
-        (_, i) => (formData.get(`nik${i}`) as string)?.trim()
-      );
 
       const payload = {
         orderId,
@@ -88,7 +79,7 @@ export default function BuyModal({
         quantity: ticketQuantity,
         email,
         names,
-        niks,
+        niks: [primaryNik],
       };
 
       const res = await fetch("/api/tokenizer", {
@@ -193,7 +184,7 @@ export default function BuyModal({
           </span>
         </div>
 
-        {/* Quantity Selector (Tanpa batasan maksimal 5) */}
+        {/* Quantity Selector */}
         <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
           <div>
             <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
@@ -222,98 +213,87 @@ export default function BuyModal({
           </div>
         </div>
 
-        {/* Visitor Identitas (Nama & NIK) Inputs */}
+        {/* Visitor Identitas (Hanya Nama Pengunjung per Orang) */}
         <div className="space-y-3 pt-3 border-t border-outline-variant">
           <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
-            Identitas Pengunjung ({ticketQuantity} Orang)
+            Daftar Nama Pengunjung ({ticketQuantity} Orang)
           </label>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {Array.from({ length: ticketQuantity }, (_, index) => (
-              <div key={index} className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-on-surface">
-                    Pengunjung {ticketQuantity > 1 ? `#${index + 1}` : ""}
-                  </span>
-                  {ticketQuantity > 1 && index === 0 && (
-                    <Tooltip label="Nama dan NIK ini digunakan sebagai kontak utama pembeli">
-                      <span className="text-[10px] font-bold text-primary bg-primary-container px-2 py-0.5 rounded-md border border-outline-variant">
-                        Kontak Utama
-                      </span>
-                    </Tooltip>
-                  )}
-                </div>
-
-                {/* Nama Pengunjung */}
-                <div>
-                  <label
-                    htmlFor={`name${index}`}
-                    className="block text-[11px] font-semibold text-on-surface-variant mb-1"
-                  >
-                    Nama Lengkap (sesuai KTP/Kartu Pelajar)
-                  </label>
-                  <input
-                    type="text"
-                    id={`name${index}`}
-                    name={`name${index}`}
-                    placeholder="Contoh: Budi Santoso"
-                    required
-                    minLength={3}
-                    maxLength={50}
-                    className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
-                  />
-                  {isUsernameErr[index] && (
-                    <p className="text-red-500 text-[11px] mt-1">
-                      Nama hanya boleh berisi huruf, angka, dan spasi (3-50 karakter)
-                    </p>
-                  )}
-                </div>
-
-                {/* NIK Pengunjung */}
-                <div>
-                  <label
-                    htmlFor={`nik${index}`}
-                    className="block text-[11px] font-semibold text-on-surface-variant mb-1"
-                  >
-                    NIK (Nomor Induk Kependudukan)
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    id={`nik${index}`}
-                    name={`nik${index}`}
-                    placeholder="Contoh: 3519012345670001 (16 digit)"
-                    required
-                    minLength={10}
-                    maxLength={20}
-                    className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
-                  />
-                  {isNikErr[index] && (
-                    <p className="text-red-500 text-[11px] mt-1">
-                      NIK wajib diisi dengan 16 digit angka valid (KTP / KK / Kartu Pelajar)
-                    </p>
-                  )}
-                </div>
+              <div key={index} className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant space-y-1.5">
+                <label
+                  htmlFor={`name${index}`}
+                  className="block text-xs font-bold text-on-surface"
+                >
+                  Nama Pengunjung #{index + 1} {index === 0 ? "(Kontak Utama)" : ""}
+                </label>
+                <input
+                  type="text"
+                  id={`name${index}`}
+                  name={`name${index}`}
+                  placeholder={`Contoh: Nama Pengunjung ${index + 1}`}
+                  required
+                  minLength={3}
+                  maxLength={50}
+                  className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
+                />
+                {isUsernameErr[index] && (
+                  <p className="text-red-500 text-[11px] mt-0.5">
+                    Nama hanya boleh berisi huruf, angka, dan spasi (3-50 karakter)
+                  </p>
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Email Input */}
-        <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant">
-          <label htmlFor="email" className="block text-xs font-bold text-on-surface mb-1">
-            Email Aktif (Pengiriman E-Tiket QR)
+        {/* Data Pemesan & Kontak Utama (NIK 1x + Email) */}
+        <div className="space-y-3 pt-3 border-t border-outline-variant">
+          <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
+            Kontak &amp; Identitas Pemesan Utama
           </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            placeholder="contoh: nama@gmail.com"
-            required
-            className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
-          />
+          <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant space-y-3">
+            {/* NIK Kontak Utama */}
+            <div>
+              <label htmlFor="nik" className="block text-xs font-bold text-on-surface mb-1">
+                NIK Pemesan / Kontak Utama (KTP / KK / Kartu Pelajar)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                id="nik"
+                name="nik"
+                placeholder="Contoh: 3519012345670001 (16 digit angka)"
+                required
+                minLength={10}
+                maxLength={20}
+                className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
+              />
+              {isNikErr && (
+                <p className="text-red-500 text-[11px] mt-1">
+                  NIK wajib diisi dengan 16 digit angka valid
+                </p>
+              )}
+            </div>
+
+            {/* Email Aktif */}
+            <div>
+              <label htmlFor="email" className="block text-xs font-bold text-on-surface mb-1">
+                Email Aktif (Pengiriman E-Tiket QR)
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="contoh: nama@gmail.com"
+                required
+                className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Rincian Biaya Summary (Tanpa Biaya Layanan) */}
+        {/* Rincian Biaya Summary */}
         <div className="bg-surface-container-low p-4 rounded-xl space-y-1.5 text-xs">
           <div className="flex justify-between text-on-surface-variant">
             <span>{ticketQuantity}x {event?.title || "Tiket"}</span>

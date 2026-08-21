@@ -38,12 +38,21 @@ export async function POST(req: NextRequest) {
     }
 
     const trimmedNames = names.map((n: string) => n.trim());
-    const trimmedNiks = Array.isArray(niks)
+    const rawNiks = Array.isArray(niks)
       ? niks.map((nik: string) => String(nik).trim())
+      : typeof niks === "string" && niks.trim()
+      ? [niks.trim()]
       : [];
 
     const nikRegex = /^[0-9]{10,20}$/;
-    for (const nik of trimmedNiks) {
+    if (rawNiks.length === 0) {
+      return NextResponse.json(
+        { message: "NIK kontak utama wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    for (const nik of rawNiks) {
       if (!nikRegex.test(nik)) {
         return NextResponse.json(
           { message: "Format NIK tidak valid (harus 10-20 digit angka)" },
@@ -51,6 +60,11 @@ export async function POST(req: NextRequest) {
         );
       }
     }
+
+    const populatedNiks =
+      rawNiks.length === 1 && quantity > 1
+        ? Array(quantity).fill(rawNiks[0])
+        : rawNiks;
 
     if (!validator.isEmail(email)) {
       return NextResponse.json({ message: "Format email tidak valid" }, { status: 400 });
@@ -113,7 +127,7 @@ export async function POST(req: NextRequest) {
         transaction.set(paymentRef, {
           status: "pending",
           name: trimmedNames,
-          nik: trimmedNiks,
+          nik: populatedNiks,
           email,
           order_id: orderId,
           event_id: eventId,

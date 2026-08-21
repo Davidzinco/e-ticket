@@ -156,7 +156,7 @@ export default function Content({
                     </p>
                     <a
                       className="font-bold text-primary hover:underline text-xs mt-1 inline-block"
-                      href="https://maps.google.com"
+                      href="https://maps.app.goo.gl/hRgrNxkrjeSoJT1x9"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -179,22 +179,10 @@ export default function Content({
                     Jadwal Event
                   </h3>
                   <div className="space-y-2.5 text-xs text-on-surface-variant">
-                    <div className="flex justify-between items-center border-b border-outline-variant/40 pb-2">
+                    <div className="flex justify-between items-center">
                       <span>Open Gate</span>
                       <span className="font-bold text-on-surface">
                         16:00 WIB
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-outline-variant/40 pb-2">
-                      <span>Main Performance</span>
-                      <span className="font-bold text-on-surface">
-                        19:30 WIB
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Closing &amp; Fireworks</span>
-                      <span className="font-bold text-on-surface">
-                        22:30 WIB
                       </span>
                     </div>
                   </div>

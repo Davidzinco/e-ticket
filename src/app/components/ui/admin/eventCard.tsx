@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useTransitionRouter } from "next-view-transitions";
 import Image from "next/image";
 
-export default function Card({
+export default function EventCard({
   id,
   title,
   description,
@@ -11,7 +11,6 @@ export default function Card({
   src,
   keyId,
   ticket,
-  entryNumber = "01",
   viewTicket = true,
   isSoldOut,
 }: {
@@ -22,7 +21,6 @@ export default function Card({
   date: Date;
   src: string;
   ticket: number;
-  entryNumber?: string;
   viewTicket?: boolean;
   isSoldOut?: boolean;
 }) {
@@ -40,11 +38,7 @@ export default function Card({
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
       className="group relative rounded-2xl bg-surface-container-lowest border border-outline-variant hover:border-primary transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden ambient-shadow"
-      onClick={() =>
-        router.push(`detail/${id}`, {
-          onTransitionReady: PageAnimation,
-        })
-      }
+      onClick={() => router.push(`/detail/${id}`)}
     >
       <div className="p-5">
         {/* Media Container */}
@@ -64,7 +58,7 @@ export default function Card({
           </div>
 
           <Image
-            src={src || "/images/bnc_2025/bhima_night_carnival26.png"}
+            src={src || "https://sman1madiun.sch.id/wp-content/uploads/2024/10/logo-banner.png"}
             alt={title}
             className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
             fill
@@ -111,9 +105,7 @@ export default function Card({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            router.push(`detail/${id}`, {
-              onTransitionReady: PageAnimation,
-            });
+            router.push(`/detail/${id}`);
           }}
           className={`py-2 px-5 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-sm ${
             soldOut
@@ -129,31 +121,3 @@ export default function Card({
     </motion.div>
   );
 }
-
-const PageAnimation = () => {
-  document.documentElement.animate(
-    [
-      { transform: `translateY(0%)` },
-      { transform: `translateY(-100%)` },
-    ],
-    {
-      duration: 600,
-      easing: "cubic-bezier(0.76, 0, 0.24, 1)",
-      fill: "forwards",
-      pseudoElement: "::view-transition-old(root)",
-    }
-  );
-
-  document.documentElement.animate(
-    [
-      { transform: `translateY(100%)` },
-      { transform: `translateY(0)` },
-    ],
-    {
-      duration: 600,
-      easing: "cubic-bezier(0.76, 0, 0.24, 1)",
-      fill: "forwards",
-      pseudoElement: "::view-transition-new(root)",
-    }
-  );
-};
