@@ -3,8 +3,8 @@ export interface QrCodeInterface {
   email: string;
   isScanned: boolean;
   scanned_by: string;
-  // isScanned: Record<string, boolean>[];
   name: string;
+  nik?: string;
   qr_code: string;
   id_event: string;
   transaction_id: string;

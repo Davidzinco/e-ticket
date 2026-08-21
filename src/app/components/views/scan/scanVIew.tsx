@@ -137,7 +137,11 @@ export default function ScanView() {
                 <td className="p-1 pr-3 whitespace-nowrap font-bold">Nama</td>
                 <td className="p-1 w-full">{custData?.data?.name || "-"}</td>
               </tr>
-              <tr>
+              <tr className="">
+                <td className="p-1 pr-3 whitespace-nowrap font-bold">NIK</td>
+                <td className="p-1 w-full">{custData?.data?.nik || "-"}</td>
+              </tr>
+              <tr className="bg-gray-300">
                 <td className="p-1 pr-3 whitespace-nowrap font-bold">Email</td>
                 <td className="p-1 w-full">{custData?.data?.email || "-"}</td>
               </tr>

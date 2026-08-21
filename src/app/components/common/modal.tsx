@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+"use client";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 export default function Modal({
   children,
@@ -6,7 +7,7 @@ export default function Modal({
   closed,
   intro = false,
   addFnc,
-  className,
+  className = "",
   disableClose = false,
 }: {
   children: React.ReactNode;
@@ -20,42 +21,46 @@ export default function Modal({
   const [close, setClose] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
+
   const handleClose = useCallback(() => {
+    setClose(true);
     timeoutRef.current = setTimeout(() => {
       if (typeof addFnc === "function") {
         addFnc();
       }
       onClose();
-    }, 300);
-    setClose(true);
-  }, [addFnc, onClose, timeoutRef]);
+    }, 200);
+  }, [addFnc, onClose]);
 
   useEffect(() => {
     if (closed) {
       handleClose();
     }
-    const handleClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        if (disableClose && closed == false) return;
-        handleClose();
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+  }, [closed, handleClose]);
 
-    return () => {
-      clearTimeout(timeoutRef.current ?? undefined);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [closed, disableClose, handleClose, onClose, timeoutRef]);
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (disableClose) return;
+    if (ref.current && !ref.current.contains(e.target as Node)) {
+      handleClose();
+    }
+  };
+
   return (
     <div
-      className={`fixed left-0 right-0 top-0 bottom-0 flex items-center justify-center bg-black/85 z-[9999] ${
+      onClick={handleBackdropClick}
+      className={`fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-[9999] p-4 transition-opacity duration-200 ${
         intro ? "animate-fadeInIntro" : "animate-fadeIn"
-      } ${close ? "animate-fadeOut" : ""}`}
+      } ${close ? "opacity-0 pointer-events-none" : "opacity-100"}`}
     >
       <div
-        className={`bg-neutral-700 p-4 mx-2 rounded-xl animate-popUp ${className}`}
         ref={ref}
+        onClick={(e) => e.stopPropagation()}
+        className={`w-full max-w-lg mx-auto transform transition-all duration-200 animate-popUp ${className}`}
       >
         {children}
       </div>

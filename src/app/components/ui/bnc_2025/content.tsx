@@ -20,7 +20,9 @@ export default function Content({
   const [openBuyModal, setOpenBuyModal] = useState<boolean>(false);
 
   useEffect(() => {
-    const snapScript = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ?? "";
+    const snapScript =
+      process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
+      "https://app.sandbox.midtrans.com/snap/snap.js";
     const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
     if (snapScript && !document.querySelector(`script[src="${snapScript}"]`)) {
       const script = document.createElement("script");
@@ -37,8 +39,14 @@ export default function Content({
       ? new Date(detailEvent.closeTime.seconds * 1000)
       : null;
 
-    if (detailEvent.isSoldOut || (closeTime && new Date() > closeTime) || detailEvent.ticket <= 0) {
+    if (
+      detailEvent.isSoldOut === true ||
+      (closeTime && new Date() > closeTime) ||
+      (typeof detailEvent.ticket === "number" && detailEvent.ticket <= 0)
+    ) {
       setIsSoldOut(true);
+    } else {
+      setIsSoldOut(false);
     }
   }, [detailEvent]);
 
@@ -56,7 +64,7 @@ export default function Content({
 
   return (
     <>
-      <main className="pt-20 px-container-margin max-w-[1200px] mx-auto pb-32 font-sans text-on-surface">
+      <main className="pt-20 px-container-margin max-w-[1200px] mx-auto pb-36 font-sans text-on-surface">
         {/* Hero Section */}
         <section className="mb-xl">
           <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden ambient-shadow flex-shrink-0">
@@ -235,7 +243,7 @@ export default function Content({
                 </p>
               </section>
 
-              {/* Desktop Price & Action */}
+              {/* Desktop / Inline Price & Action */}
               <div className="border-t border-outline-variant pt-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex flex-col w-full md:w-auto text-center md:text-left">
@@ -250,6 +258,7 @@ export default function Content({
                     </span>
                   </div>
                   <button
+                    type="button"
                     disabled={isSoldOut}
                     onClick={() => setOpenBuyModal(true)}
                     className={`w-full md:w-auto font-bold text-sm px-8 py-4 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 ${
@@ -275,24 +284,25 @@ export default function Content({
           </div>
         </section>
 
-        {/* Mobile Fixed Sticky Bottom CTA */}
-        <div className="fixed bottom-16 left-0 w-full bg-surface border-t border-outline-variant shadow-[0_-4px_12px_rgba(15,23,42,0.05)] z-40 p-4 md:hidden">
-          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+        {/* Universal Sticky Bottom CTA (Visible across all screen sizes) */}
+        <div className="fixed bottom-16 left-0 w-full bg-surface/95 backdrop-blur-md border-t border-outline-variant shadow-[0_-4px_16px_rgba(15,23,42,0.08)] z-40 p-3 sm:p-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
             <div className="flex flex-col">
-              <span className="text-[10px] text-on-surface-variant">
+              <span className="text-[10px] sm:text-xs text-on-surface-variant">
                 Mulai dari
               </span>
               <span
-                className="text-lg font-extrabold text-primary"
+                className="text-base sm:text-xl font-extrabold text-primary"
                 style={{ color: "rgb(56, 105, 72)" }}
               >
                 {formattedPrice}
               </span>
             </div>
             <button
+              type="button"
               disabled={isSoldOut}
               onClick={() => setOpenBuyModal(true)}
-              className={`flex-1 max-w-[220px] py-3 px-5 rounded-xl font-bold text-xs active:scale-95 transition-all flex justify-center items-center gap-1.5 cursor-pointer shadow-md ${
+              className={`flex-1 max-w-[240px] py-3 px-5 sm:px-6 rounded-xl font-bold text-xs sm:text-sm active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer shadow-md ${
                 isSoldOut
                   ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
                   : "bg-primary text-on-primary hover:opacity-90"
@@ -303,7 +313,7 @@ export default function Content({
             >
               <span>{isSoldOut ? "Habis" : "Pilih Tiket"}</span>
               <span
-                className="material-symbols-outlined text-sm"
+                className="material-symbols-outlined text-sm sm:text-base"
                 style={{ fontVariationSettings: "'FILL' 1" }}
               >
                 confirmation_number

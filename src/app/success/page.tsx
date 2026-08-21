@@ -114,8 +114,8 @@ function SuccessContent() {
                   <span className="font-mono font-bold text-on-surface">#{orderId}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-on-surface-variant block">Lokasi / Venue</span>
-                  <span className="font-bold text-on-surface">SMAN 1 Madiun Arena</span>
+                  <span className="text-[10px] text-on-surface-variant block">Identitas / NIK</span>
+                  <span className="font-bold text-on-surface">Terverifikasi</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-on-surface-variant block">Status Pembayaran</span>
