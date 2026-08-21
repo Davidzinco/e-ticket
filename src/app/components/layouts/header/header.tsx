@@ -24,7 +24,7 @@ export default function Header({
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-surface shadow-sm border-b border-outline-variant flex items-center justify-between px-container-margin h-16 transition-colors duration-200 text-on-surface">
+    <header className="fixed top-0 w-full z-50 bg-surface shadow-sm border-b border-outline-variant flex items-center justify-between px-4 sm:px-6 h-16 transition-colors duration-200 text-on-surface">
       <div className="flex items-center gap-2">
         <button
           onClick={handleBack}

@@ -28,7 +28,7 @@ function SuccessContent() {
     <div className="min-h-screen bg-background text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
       <Header title="Official E-Ticket" currentView="myticket" />
 
-      <main className="flex-grow container mx-auto max-w-2xl px-container-margin py-lg flex flex-col gap-6 pt-20 pb-28">
+      <main className="flex-grow container mx-auto max-w-2xl px-4 sm:px-6 py-6 flex flex-col gap-6 pt-20 pb-28">
         {/* Progress Indicator */}
         <div className="flex items-center justify-center w-full px-4 mb-2">
           <div className="flex items-center text-primary">
@@ -106,8 +106,8 @@ function SuccessContent() {
 
               <div className="grid grid-cols-2 gap-4 text-xs mb-6">
                 <div>
-                  <span className="text-[10px] text-on-surface-variant block">Jenis Pass</span>
-                  <span className="font-bold text-on-surface">VIP Pass (1x)</span>
+                  <span className="text-[10px] text-on-surface-variant block">Jenis Tiket</span>
+                  <span className="font-bold text-on-surface">Tiket Resmi (Official Pass)</span>
                 </div>
                 <div>
                   <span className="text-[10px] text-on-surface-variant block">ID Transaksi</span>

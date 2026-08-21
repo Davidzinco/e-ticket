@@ -18,35 +18,15 @@ export default function BuyModal({
   event: EventInterface | undefined;
 }) {
   const [ticketQuantity, setTicketQuantity] = useState<number>(initialCount);
-  const [selectedCategory, setSelectedCategory] = useState<string>("vip");
   const [isUsernameErr, setIsUsernameErr] = useState<{ [key: number]: boolean }>({});
   const [isNikErr, setIsNikErr] = useState<{ [key: number]: boolean }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const basePrice = event?.price || 45000;
-  const categories = [
-    {
-      id: "vip",
-      name: "VIP Pass",
-      price: basePrice,
-      description: "Fast track entry, VIP Lounge access & free souvenir",
-      recommended: true,
-    },
-    {
-      id: "ga",
-      name: "General Admission",
-      price: Math.max(25000, Math.floor(basePrice * 0.7)),
-      description: "General entry to main stage & carnival area",
-      recommended: false,
-    },
-  ];
+  const ticketPrice = event?.price || 0;
+  const totalAmount = ticketPrice * ticketQuantity;
 
-  const currentCategoryObj = categories.find((c) => c.id === selectedCategory) || categories[0];
-  const ticketSubtotal = currentCategoryObj.price * ticketQuantity;
-  const serviceFee = selectedCategory === "vip" ? 2500 : 1000;
-  const totalAmount = ticketSubtotal + serviceFee;
-
-  const maxTickets = Math.min(5, event?.ticket && event.ticket > 0 ? event.ticket : 5);
+  // Tidak ada batasan maksimal buatan (hanya dibatasi oleh sisa stok di Firebase jika ada)
+  const maxTickets = event?.ticket && event.ticket > 0 ? event.ticket : 999;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -103,8 +83,8 @@ export default function BuyModal({
       const payload = {
         orderId,
         eventId: event?.id || "5W7jcnr28tGc5E8tywRl",
-        productName: `${event?.title || "Bhima Night Carnival"} (${currentCategoryObj.name})`,
-        price: currentCategoryObj.price,
+        productName: event?.title || "Bhima Night Carnival",
+        price: ticketPrice,
         quantity: ticketQuantity,
         email,
         names,
@@ -171,7 +151,7 @@ export default function BuyModal({
   return (
     <Modal
       onClose={onClose}
-      className="bg-surface border border-outline-variant text-on-surface max-w-lg w-full p-0 rounded-2xl shadow-2xl overflow-hidden font-sans"
+      className="w-full max-w-[540px] bg-surface border border-outline-variant text-on-surface p-0 rounded-2xl shadow-2xl overflow-hidden font-sans"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-5 sm:p-6 border-b border-outline-variant bg-surface-container-lowest">
@@ -192,49 +172,34 @@ export default function BuyModal({
 
       {/* Form & Selection Content */}
       <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[75dvh] overflow-y-auto">
-        {/* Ticket Category Selection */}
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
-            Kategori Tiket
-          </label>
-          <div className="grid grid-cols-1 gap-2.5">
-            {categories.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => setSelectedCategory(c.id)}
-                className={`p-3.5 sm:p-4 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-4 ${
-                  selectedCategory === c.id
-                    ? "border-primary bg-primary-container/20 ring-1 ring-primary"
-                    : "border-outline-variant hover:bg-surface-container-low"
-                }`}
-              >
-                <div className="space-y-0.5">
-                  <div className="font-bold text-sm text-on-surface flex items-center gap-2">
-                    {c.name}
-                    {c.recommended && (
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-primary text-on-primary font-bold">
-                        RECOMMENDED
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-on-surface-variant">{c.description}</p>
-                </div>
-                <span
-                  className="font-extrabold text-sm text-primary whitespace-nowrap"
-                  style={{ color: "rgb(56, 105, 72)" }}
-                >
-                  Rp {c.price.toLocaleString("id-ID")}
-                </span>
-              </div>
-            ))}
+        {/* Info Tiket dari Firebase */}
+        <div className="p-4 rounded-xl border border-primary bg-primary-container/20 ring-1 ring-primary flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
+            <div className="font-bold text-sm text-on-surface flex items-center gap-2">
+              {event?.title || "Official E-Ticket"}
+              <span className="px-2 py-0.5 rounded text-[10px] bg-primary text-on-primary font-bold">
+                RESMI
+              </span>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              {event?.sub_title || "Akses masuk resmi acara Bhima Night Carnival"}
+            </p>
           </div>
+          <span
+            className="font-extrabold text-base text-primary whitespace-nowrap"
+            style={{ color: "rgb(56, 105, 72)" }}
+          >
+            Rp {ticketPrice.toLocaleString("id-ID")}
+          </span>
         </div>
 
-        {/* Quantity Selector */}
+        {/* Quantity Selector (Tanpa batasan maksimal 5) */}
         <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
           <div>
             <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
-            <span className="text-xs text-on-surface-variant">Maksimal {maxTickets} tiket per pemesanan</span>
+            <span className="text-xs text-on-surface-variant">
+              {event?.ticket ? `Tersedia ${event.ticket} tiket` : "Pilih jumlah tiket yang ingin dibeli"}
+            </span>
           </div>
           <div className="flex items-center border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
             <button
@@ -244,7 +209,7 @@ export default function BuyModal({
             >
               <span className="material-symbols-outlined text-sm">remove</span>
             </button>
-            <span className="w-10 text-center font-bold text-sm text-on-surface">
+            <span className="w-12 text-center font-bold text-sm text-on-surface">
               {ticketQuantity}
             </span>
             <button
@@ -348,15 +313,11 @@ export default function BuyModal({
           />
         </div>
 
-        {/* Rincian Biaya Summary */}
+        {/* Rincian Biaya Summary (Tanpa Biaya Layanan) */}
         <div className="bg-surface-container-low p-4 rounded-xl space-y-1.5 text-xs">
           <div className="flex justify-between text-on-surface-variant">
-            <span>{ticketQuantity}x {currentCategoryObj.name}</span>
-            <span>Rp {ticketSubtotal.toLocaleString("id-ID")}</span>
-          </div>
-          <div className="flex justify-between text-on-surface-variant">
-            <span>Biaya Layanan &amp; Penanganan</span>
-            <span>Rp {serviceFee.toLocaleString("id-ID")}</span>
+            <span>{ticketQuantity}x {event?.title || "Tiket"}</span>
+            <span>Rp {(ticketPrice * ticketQuantity).toLocaleString("id-ID")}</span>
           </div>
           <div className="flex justify-between text-on-surface pt-2 border-t border-outline-variant font-bold text-sm">
             <span>Total Bayar</span>

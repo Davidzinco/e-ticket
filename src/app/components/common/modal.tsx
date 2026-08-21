@@ -60,7 +60,7 @@ export default function Modal({
       <div
         ref={ref}
         onClick={(e) => e.stopPropagation()}
-        className={`w-full max-w-lg mx-auto transform transition-all duration-200 animate-popUp ${className}`}
+        className={`w-full max-w-[540px] mx-auto transform transition-all duration-200 animate-popUp ${className}`}
       >
         {children}
       </div>
