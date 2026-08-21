@@ -115,20 +115,34 @@ export default function BuyModal({
     }).catch(() => toast.error("Ups Terjadi Kesalahan"));
   };
   return (
-    <Modal onClose={onClose} className="bg-white max-w-xl w-full">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <h1 className="font-bold text-2xl">Isi Data Berikut</h1>
-        <section className="max-h-[60dvh] overflow-y-scroll flex flex-col gap-[6px]">
+    <Modal onClose={onClose} className="bg-[#16263b] border border-[#213145] text-[#f8f9ff] max-w-lg w-full p-6 sm:p-7 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.7)]">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4f46e5]/15 border border-[#4f46e5]/30 text-[#c3c0ff] text-[10px] font-bold uppercase tracking-wider mb-2">
+            <span>Checkout Tiket</span>
+          </div>
+          <h2 className="font-extrabold text-2xl text-white tracking-tight">
+            Data Pemesan
+          </h2>
+          <p className="text-xs text-[#9aa4bc] mt-1">
+            Lengkapi nama dan email untuk penerbitan tiket resmi.
+          </p>
+        </div>
+
+        <section className="max-h-[48dvh] overflow-y-auto pr-1 flex flex-col gap-3 custom-scrollbar">
           {Array.from({ length: count }, (_, index) => (
-            <div key={index} className="">
-              <div className="flex gap-2 items-center">
-                <label htmlFor={`name${index}`}>
-                  Nama Lengkap {count > 1 && index + 1}
+            <div key={index} className="p-3.5 rounded-xl bg-[#0b1c30] border border-[#213145]">
+              <div className="flex justify-between items-center mb-1.5">
+                <label
+                  htmlFor={`name${index}`}
+                  className="text-xs font-bold text-[#c3c0ff]"
+                >
+                  Nama Pengunjung {count > 1 ? `#${index + 1}` : ""}
                 </label>
                 {count > 1 && index === 0 && (
-                  <Tooltip label="Nama ini digunakan untuk customer detail">
-                    <span className="text-orange-500 text-[14px]">
-                      *pembeli
+                  <Tooltip label="Nama ini digunakan sebagai kontak utama pembeli">
+                    <span className="text-[11px] font-bold text-[#4f46e5] bg-[#4f46e5]/15 px-2 py-0.5 rounded-md border border-[#4f46e5]/30">
+                      Kontak Utama
                     </span>
                   </Tooltip>
                 )}
@@ -137,38 +151,52 @@ export default function BuyModal({
                 type="text"
                 id={`name${index}`}
                 name={`name${index}`}
-                placeholder="sesuai KTP / Kartu Identitas"
+                placeholder="Nama lengkap sesuai kartu identitas"
                 required
                 min={3}
                 max={50}
-                className="w-full rounded-lg border-2 border-gray-300 px-2 py-1 mt-1"
+                className="w-full rounded-lg bg-[#16263b] border border-[#213145] focus:border-[#4f46e5] text-white placeholder-[#777587] px-3.5 py-2 text-sm outline-none transition-colors"
               />
               {isUsernameErr[index] && (
-                <p className="text-red-500 text-sm pl-[6px]">
-                  hanya boleh mengandung huruf dan angka
+                <p className="text-red-400 text-xs mt-1 pl-1">
+                  Hanya boleh mengandung huruf dan angka
                 </p>
               )}
             </div>
           ))}
         </section>
-        <div>
-          <label htmlFor="nama">Email Aktif</label>
+
+        <div className="p-3.5 rounded-xl bg-[#0b1c30] border border-[#213145]">
+          <label htmlFor="email" className="block text-xs font-bold text-[#c3c0ff] mb-1.5">
+            Email Pengiriman Tiket QR
+          </label>
           <input
             type="email"
             id="email"
             name="email"
-            placeholder="sman1madiun@gmail.com"
+            placeholder="contoh: nama@gmail.com"
             required
-            className="w-full rounded-lg border-2 border-gray-300 px-2 py-1 mt-1"
+            className="w-full rounded-lg bg-[#16263b] border border-[#213145] focus:border-[#4f46e5] text-white placeholder-[#777587] px-3.5 py-2 text-sm outline-none transition-colors"
           />
         </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="bg-blue-500 text-white rounded-lg self-end px-3 py-1 mt-2 cursor-pointer hover:bg-blue-500/80 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          Beli Sekarang
-        </button>
+
+        <div className="flex justify-between items-center pt-3 border-t border-[#213145]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs font-bold text-[#9aa4bc] hover:text-white px-3 py-2 transition-colors cursor-pointer"
+          >
+            Batal
+          </button>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="bg-[#4f46e5] text-white hover:bg-[#3525cd] font-bold text-xs sm:text-sm py-2.5 px-6 rounded-lg shadow-md shadow-[#4f46e5]/30 cursor-pointer active:scale-95 disabled:bg-[#213145] disabled:text-[#777587] disabled:cursor-not-allowed transition-all"
+          >
+            {isLoading ? "Memproses..." : isConfirm ? "Konfirmasi & Bayar" : "Lanjut Pembayaran"}
+          </button>
+        </div>
       </form>
     </Modal>
   );

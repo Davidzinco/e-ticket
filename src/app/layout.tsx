@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ViewTransitions } from "next-view-transitions";
 import PageWrapper from "./components/layouts/transition/transition";
@@ -8,14 +8,14 @@ import Providers from "./components/layouts/Providers/Providers";
 import { authOptions } from "@/libs/auth/auth";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({
-  variable: "--font-inter",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Bhimacrew",
-  description: "E-Ticket by Bhimacrew",
+  title: "Bhimacrew | E-Ticket",
+  description: "Official E-Ticket Platform for Bhima Night Carnival",
   icons: {
     icon: "/images/smasa.ico",
   },
@@ -34,7 +34,7 @@ export default async function RootLayout({
   return (
     <ViewTransitions>
       <html lang="en">
-        <body className={`${inter.variable} bg-black`}>
+        <body className={`${plusJakartaSans.className} bg-[#0b1c30] text-[#f8f9ff] selection:bg-[#4f46e5] selection:text-white min-h-screen font-sans`}>
           <Toaster richColors position="top-center" />
           <Providers session={session}>
             <PageWrapper>{children}</PageWrapper>
