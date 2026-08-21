@@ -141,8 +141,8 @@ export default function Content({
             <section className="w-full absolute left-0 top-0 -translate-y-[25%] z-[4] overflow-hidden">
               <div className="w-full relative h-auto overflow-hidden">
                 <Image
-                  src={"/images/bnc_2025/forrest.webp"}
-                  alt="forrest"
+                  src={"/images/bnc_2025/IMG_3975.webp"}
+                  alt="IMG_3975"
                   width={1000}
                   height={1000}
                   className="w-full h-auto object-cover object-center"
