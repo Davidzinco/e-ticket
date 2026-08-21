@@ -28,9 +28,8 @@ export default function Card({
 }) {
   const router = useTransitionRouter();
   const dateConvert = date
-    .toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" })
-    .split("/")
-    .join(".");
+    ? date.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta" }).split("/").join(".")
+    : "15.12.2024";
 
   const soldOut = isSoldOut || ticket <= 0;
 
@@ -40,36 +39,32 @@ export default function Card({
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="group relative rounded-2xl bg-[#16263b] border border-[#213145] hover:border-[#4f46e5]/50 transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden shadow-lg shadow-black/30"
+      className="group relative rounded-2xl bg-surface-container-lowest border border-outline-variant hover:border-primary transition-all duration-300 flex flex-col justify-between cursor-pointer overflow-hidden ambient-shadow"
       onClick={() =>
         router.push(`detail/${id}`, {
           onTransitionReady: PageAnimation,
         })
       }
     >
-      {/* Side Perforation Knockouts (Ticket Stub Mask effect from Stitch) */}
-      <div className="absolute top-1/2 -left-2.5 w-5 h-5 rounded-full bg-[#0b1c30] border-r border-[#213145] z-30 hidden sm:block"></div>
-      <div className="absolute top-1/2 -right-2.5 w-5 h-5 rounded-full bg-[#0b1c30] border-l border-[#213145] z-30 hidden sm:block"></div>
-
-      <div className="p-4 sm:p-5">
+      <div className="p-5">
         {/* Media Container */}
-        <div className="relative w-full aspect-[16/10] bg-[#0b1c30] rounded-xl overflow-hidden mb-4 border border-[#213145]">
+        <div className="relative w-full aspect-[16/10] bg-surface-container-low rounded-xl overflow-hidden mb-4 border border-outline-variant">
           {soldOut && (
-            <div className="absolute inset-0 bg-[#0b1c30]/85 backdrop-blur-xs flex flex-col justify-center items-center z-20">
-              <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 font-bold text-xs tracking-wider uppercase border border-red-500/30">
+            <div className="absolute inset-0 bg-surface/85 backdrop-blur-xs flex flex-col justify-center items-center z-20">
+              <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-600 font-bold text-xs tracking-wider uppercase border border-red-500/30">
                 Tiket Habis
               </span>
             </div>
           )}
 
           <div className="absolute top-3 left-3 z-10 flex gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#0b1c30]/80 backdrop-blur-md text-[#c3c0ff] border border-[#4f46e5]/40">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-surface/90 backdrop-blur-md text-primary border border-outline-variant">
               BNC Pass
             </span>
           </div>
 
           <Image
-            src={src}
+            src={src || "/images/bnc_2025/bhima_night_carnival26.png"}
             alt={title}
             className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
             fill
@@ -79,15 +74,15 @@ export default function Card({
         {/* Header & Meta */}
         <div className="flex flex-col gap-1.5 mb-3">
           <div className="flex justify-between items-start gap-2">
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white group-hover:text-[#c3c0ff] transition-colors line-clamp-1">
+            <h2 className="text-lg font-bold tracking-tight text-on-surface group-hover:text-primary transition-colors line-clamp-1">
               {title}
             </h2>
             {viewTicket && (
               <span
                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold shrink-0 ${
                   soldOut
-                    ? "bg-red-500/15 text-red-400 border border-red-500/30"
-                    : "bg-[#4f46e5]/20 text-[#c3c0ff] border border-[#4f46e5]/40"
+                    ? "bg-red-500/15 text-red-600 border border-red-500/30"
+                    : "bg-primary-container text-on-primary-container border border-outline-variant"
                 }`}
               >
                 {soldOut ? "Habis" : `${ticket} Tiket`}
@@ -95,23 +90,23 @@ export default function Card({
             )}
           </div>
 
-          <p className="text-xs text-[#c7c4d8] font-medium flex items-center gap-2">
-            <span className="text-[#c3c0ff] font-semibold">{dateConvert}</span>
-            <span className="text-[#464555]">•</span>
+          <p className="text-xs text-on-surface-variant font-medium flex items-center gap-2">
+            <span className="text-primary font-bold" style={{ color: "rgb(56, 105, 72)" }}>{dateConvert}</span>
+            <span>•</span>
             <span>SMAN 1 Madiun</span>
           </p>
         </div>
 
         {/* Description */}
-        <p className="text-xs text-[#9aa4bc] line-clamp-2 leading-relaxed font-normal mb-2">
+        <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed font-normal mb-2">
           {description || "Perayaan seni dan pertunjukan akbar Bhima Night Carnival."}
         </p>
       </div>
 
-      {/* Ticket Action Footer (Perforated Line separator) */}
-      <div className="px-4 py-3 sm:px-5 border-t border-dashed border-[#213145] bg-[#112035] flex items-center justify-between">
-        <span className="text-xs font-bold text-[#c3c0ff]">
-          Detail & Tiket
+      {/* Ticket Action Footer */}
+      <div className="px-5 py-3 border-t border-dashed border-outline-variant bg-surface-container-low flex items-center justify-between">
+        <span className="text-xs font-bold text-on-surface">
+          Detail &amp; Tiket
         </span>
         <button
           onClick={(e) => {
@@ -120,11 +115,12 @@ export default function Card({
               onTransitionReady: PageAnimation,
             });
           }}
-          className={`py-2 px-5 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-md ${
+          className={`py-2 px-5 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer active:scale-95 flex items-center gap-1.5 shadow-sm ${
             soldOut
-              ? "bg-[#16263b] text-[#777587] border border-[#213145] cursor-not-allowed"
-              : "bg-[#4f46e5] text-white hover:bg-[#3525cd] shadow-[#4f46e5]/30"
+              ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
+              : "bg-primary text-on-primary hover:opacity-90"
           }`}
+          style={!soldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}}
         >
           <span>{soldOut ? "Habis" : "Beli Tiket"}</span>
           <span>→</span>
@@ -141,7 +137,7 @@ const PageAnimation = () => {
       { transform: `translateY(-100%)` },
     ],
     {
-      duration: 1000,
+      duration: 600,
       easing: "cubic-bezier(0.76, 0, 0.24, 1)",
       fill: "forwards",
       pseudoElement: "::view-transition-old(root)",
@@ -154,11 +150,10 @@ const PageAnimation = () => {
       { transform: `translateY(0)` },
     ],
     {
-      duration: 1000,
+      duration: 600,
       easing: "cubic-bezier(0.76, 0, 0.24, 1)",
       fill: "forwards",
       pseudoElement: "::view-transition-new(root)",
     }
   );
 };
-

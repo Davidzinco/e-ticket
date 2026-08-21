@@ -1,8 +1,7 @@
-﻿import { EventInterface } from "@/app/components/interfaces/event";
-import Navbar from "@/app/components/layouts/navbar/navbar";
+import { EventInterface } from "@/app/components/interfaces/event";
+import Header from "@/app/components/layouts/header/header";
+import BottomNav from "@/app/components/layouts/bottomNav/bottomNav";
 import Content from "@/app/components/ui/bnc_2025/content";
-import Header from "@/app/components/ui/bnc_2025/header";
-import toDate from "@/app/components/utils/toDate";
 
 export default function Bnc2025View({
   detailEvent,
@@ -13,17 +12,18 @@ export default function Bnc2025View({
   hasError: boolean;
   slug: string | null;
 }) {
-  if (hasError) {
+  if (hasError || !detailEvent) {
     return (
-      <div className="bg-[#0b1c30] min-h-screen flex flex-col justify-center items-center px-6 text-center">
-        <div className="max-w-md p-8 rounded-2xl bg-[#16263b] border border-[#213145]">
-          <h2 className="text-white font-bold text-lg mb-1">Gagal Memuat Acara</h2>
-          <p className="text-[#9aa4bc] text-xs mb-5">
+      <div className="bg-background min-h-screen flex flex-col justify-center items-center px-6 text-center text-on-background">
+        <div className="max-w-md p-8 rounded-2xl bg-surface border border-outline-variant shadow-lg">
+          <h2 className="font-bold text-lg text-on-surface mb-2">Gagal Memuat Acara</h2>
+          <p className="text-on-surface-variant text-xs mb-6">
             Terjadi kendala saat menghubungkan ke sistem tiket.
           </p>
           <a
             href="/"
-            className="inline-block py-2.5 px-5 rounded-lg bg-[#4f46e5] text-white font-bold text-xs hover:bg-[#3525cd] transition-colors"
+            className="inline-block py-3 px-6 rounded-xl bg-primary text-on-primary font-bold text-xs hover:opacity-90 transition-all shadow-md"
+            style={{ backgroundColor: "rgb(56, 105, 72)" }}
           >
             Kembali ke Beranda
           </a>
@@ -33,27 +33,18 @@ export default function Bnc2025View({
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1c30] text-[#f8f9ff] selection:bg-[#4f46e5] selection:text-white flex flex-col font-sans">
-      {!hasError && detailEvent !== null && (
-        <>
-          <Navbar />
-          <Header
-            title={detailEvent.title}
-            sub_title={detailEvent.sub_title}
-            date={toDate(detailEvent.timestamp)}
-            location={detailEvent.location}
-          />
-          <div className="flex-grow pb-24 sm:pb-0">
-            <Content detailEvent={detailEvent} slug={slug} />
-          </div>
-          <footer className="py-8 text-center text-xs text-[#9aa4bc] border-t border-[#213145] bg-[#081525] z-50">
-            <p className="font-semibold text-[#c7c4d8]">
-              © 2026 <span className="text-white font-bold">Bhima Night Carnival</span> • SMAN 1 Madiun
-            </p>
-            <p className="text-[11px] text-[#777587] mt-1">Platform Pemesanan Tiket Resmi</p>
-          </footer>
-        </>
-      )}
+    <div className="min-h-screen bg-background text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
+      <Header title={detailEvent.title || "BNC"} currentView="info" />
+      <div className="flex-grow pb-16">
+        <Content detailEvent={detailEvent} slug={slug} />
+      </div>
+      <footer className="py-6 text-center text-xs text-on-surface-variant border-t border-outline-variant bg-surface mb-16">
+        <p className="font-bold text-on-surface">
+          © 2026 <span className="text-primary font-bold" style={{ color: "rgb(56, 105, 72)" }}>Bhima Night Carnival</span> • SMAN 1 Madiun
+        </p>
+        <p className="text-[11px] text-on-surface-variant mt-1">Platform Pemesanan Tiket Resmi</p>
+      </footer>
+      <BottomNav activeTab="info" />
     </div>
   );
 }

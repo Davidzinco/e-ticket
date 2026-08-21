@@ -1,13 +1,14 @@
+"use client";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import Modal from "../../common/modal";
-import { useState } from "react";
 import { EventInterface } from "../../interfaces/event";
 import { v4 as uuidv4 } from "uuid";
 import { Tooltip } from "../../common/toolTip";
 
 export default function BuyModal({
   onClose,
-  count,
+  count: initialCount = 1,
   mutate,
   event,
 }: {
@@ -16,23 +17,50 @@ export default function BuyModal({
   mutate: () => void;
   event: EventInterface | undefined;
 }) {
-  const [isUsernameErr, setIsUsernameErr] = useState<{
-    [key: number]: boolean;
-  }>({});
+  const [ticketQuantity, setTicketQuantity] = useState<number>(initialCount);
+  const [selectedCategory, setSelectedCategory] = useState<string>("vip");
+  const [isUsernameErr, setIsUsernameErr] = useState<{ [key: number]: boolean }>({});
   const [isConfirm, setIsConfirm] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const basePrice = event?.price || 45000;
+  const categories = [
+    {
+      id: "vip",
+      name: "VIP Pass",
+      price: basePrice,
+      description: "Fast track entry, VIP Lounge access & free souvenir",
+      recommended: true,
+    },
+    {
+      id: "ga",
+      name: "General Admission",
+      price: Math.max(25000, Math.floor(basePrice * 0.7)),
+      description: "General entry to main stage & carnival area",
+      recommended: false,
+    },
+  ];
+
+  const currentCategoryObj = categories.find((c) => c.id === selectedCategory) || categories[0];
+  const ticketSubtotal = currentCategoryObj.price * ticketQuantity;
+  const serviceFee = selectedCategory === "vip" ? 2500 : 1000;
+  const totalAmount = ticketSubtotal + serviceFee;
+
+  const maxTickets = Math.min(5, event?.ticket || 5);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isConfirm) {
       setIsConfirm(true);
-      return toast.info("Pastikan data sudah benar lalu klik sekali lagi");
+      return toast.info("Pastikan data identitas sudah benar, lalu klik sekali lagi untuk membayar");
     }
+
     setIsLoading(true);
     const formData = new FormData(e.currentTarget);
     const usernameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
     const newErrors: { [key: number]: boolean } = {};
-    for (let i = 0; i < count; i++) {
+
+    for (let i = 0; i < ticketQuantity; i++) {
       const name = formData.get(`name${i}`) as string;
       newErrors[i] = usernameRegex.test(name) ? false : true;
     }
@@ -41,20 +69,22 @@ export default function BuyModal({
     const hasError = Object.values(newErrors).some((v) => v);
     if (hasError) {
       setIsLoading(false);
-      return toast.error("Username Tidak Valid");
+      return toast.error("Nama pengunjung wajib diisi 3-50 karakter");
     }
+
     try {
       const orderId = uuidv4().replace(/-/g, "").slice(0, 24);
       const names = Array.from(
-        { length: count },
+        { length: ticketQuantity },
         (_, i) => formData.get(`name${i}`) as string
       );
-      const data = {
+
+      const payload = {
         orderId,
-        eventId: "5W7jcnr28tGc5E8tywRl",
-        productName: event?.title,
-        price: event?.price,
-        quantity: count,
+        eventId: event?.id || "5W7jcnr28tGc5E8tywRl",
+        productName: `${event?.title || "Bhima Night Carnival"} (${currentCategoryObj.name})`,
+        price: currentCategoryObj.price,
+        quantity: ticketQuantity,
         email: formData.get("email") as string,
         names,
       };
@@ -64,39 +94,44 @@ export default function BuyModal({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       const reqData = await res.json();
       if (reqData.message === "Invalid username") {
-        toast.error("Invalid username");
+        toast.error("Format nama tidak valid");
         return;
       }
       if (reqData.message === "Invalid email") {
-        toast.error("Invalid email");
+        toast.error("Format email tidak valid");
         return;
       }
       if (reqData.message === "Ticket not enough") {
-        toast.info("Maaf Saat Ini Ticket Sudah Habis");
+        toast.info("Maaf, stok tiket sudah tidak mencukupi");
         mutate();
         return;
       }
       if (res.status !== 200) {
-        toast.error("Ups Terjadi Kesalahan");
+        toast.error("Terjadi kesalahan saat memproses pesanan");
         return;
       }
-      window?.snap?.pay(reqData?.token?.token, {
-        async onError() {
-          await handleFail(orderId);
-          mutate();
-        },
-        async onClose() {
-          await handleFail(orderId);
-          mutate();
-        },
-      });
+
+      if (window?.snap?.pay) {
+        window.snap.pay(reqData?.token?.token, {
+          async onError() {
+            await handleFail(orderId);
+            mutate();
+          },
+          async onClose() {
+            await handleFail(orderId);
+            mutate();
+          },
+        });
+      } else {
+        toast.success("Pesanan berhasil dibuat! Silakan periksa email Anda.");
+      }
     } catch {
-      toast.error("Ups Terjadi Kesalahan");
+      toast.error("Terjadi kesalahan koneksi");
     } finally {
       setIsLoading(false);
     }
@@ -108,103 +143,146 @@ export default function BuyModal({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        order_id,
-      }),
-    }).catch(() => toast.error("Ups Terjadi Kesalahan"));
+      body: JSON.stringify({ order_id }),
+    }).catch(() => {});
   };
 
   return (
-    <Modal onClose={onClose} className="bg-[#16263b] border border-[#213145] text-[#f8f9ff] max-w-lg w-full p-6 sm:p-7 rounded-2xl shadow-[0_24px_60px_rgba(0,0,0,0.8)]">
-      {/* Stitch Progress Indicator */}
-      <div className="flex items-center justify-center w-full mb-5 pb-4 border-b border-[#213145]">
-        <div className="flex items-center text-[#c3c0ff]">
-          <div className="w-7 h-7 rounded-full bg-[#4f46e5] text-white flex items-center justify-center font-bold text-xs shadow-md">
-            1
-          </div>
-          <span className="ml-2 font-bold text-xs text-white">Identitas</span>
-        </div>
-        <div className="flex-1 h-[2px] bg-[#4f46e5] mx-3 max-w-[60px]"></div>
-        <div className="flex items-center text-[#9aa4bc]">
-          <div className="w-7 h-7 rounded-full bg-[#0b1c30] text-[#9aa4bc] flex items-center justify-center font-bold text-xs border border-[#213145]">
-            2
-          </div>
-          <span className="ml-2 font-bold text-xs text-[#9aa4bc]">Pembayaran</span>
-        </div>
-        <div className="flex-1 h-[2px] bg-[#213145] mx-3 max-w-[60px]"></div>
-        <div className="flex items-center text-[#9aa4bc] opacity-50">
-          <div className="w-7 h-7 rounded-full bg-[#0b1c30] text-[#777587] flex items-center justify-center font-bold text-xs border border-[#213145]">
-            3
-          </div>
-          <span className="ml-2 font-bold text-xs text-[#777587] hidden sm:inline">Selesai</span>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <Modal
+      onClose={onClose}
+      className="bg-surface border border-outline-variant text-on-surface max-w-lg w-full p-0 rounded-2xl shadow-2xl overflow-hidden font-sans"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 border-b border-outline-variant bg-surface-container-lowest">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#4f46e5]/15 border border-[#4f46e5]/30 text-[#c3c0ff] text-[10px] font-bold uppercase tracking-wider mb-1.5">
-            <span>Pembayaran Aman QRIS</span>
-          </div>
-          <h2 className="font-extrabold text-xl sm:text-2xl text-white tracking-tight">
-            Checkout Tiket
-          </h2>
-          <p className="text-xs text-[#9aa4bc] mt-0.5">
-            Isi data identitas pengunjung di bawah ini untuk penerbitan tiket resmi.
+          <h3 className="text-xl font-extrabold text-on-surface">Pilih Tiket &amp; Data</h3>
+          <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+            {event?.title || "Bhima Night Carnival"} • SMAN 1 Madiun
           </p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-on-surface-variant hover:bg-surface-container p-2 rounded-full transition-colors cursor-pointer"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
+      </div>
 
-        {/* Ticket Stub Mask Summary Header */}
-        <div className="relative bg-[#0b1c30] border border-[#213145] p-3.5 rounded-xl ticket-stub-mask flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-white">{event?.title || "Bhima Night Carnival"}</span>
-            <span className="text-[11px] text-[#c3c0ff] font-semibold">{count}x VIP Pass • Bhima Arena</span>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] text-[#9aa4bc] uppercase block font-bold">Total</span>
-            <span className="text-sm font-extrabold text-[#c3c0ff]">Rp {((event?.price || 0) * count).toLocaleString("id-ID")}</span>
+      {/* Form & Selection Content */}
+      <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[72dvh] overflow-y-auto">
+        {/* Ticket Category Selection */}
+        <div className="space-y-3">
+          <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
+            Kategori Tiket
+          </label>
+          <div className="grid grid-cols-1 gap-3">
+            {categories.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => setSelectedCategory(c.id)}
+                className={`p-4 rounded-xl border cursor-pointer transition-all flex items-start justify-between gap-4 ${
+                  selectedCategory === c.id
+                    ? "border-primary bg-primary-container/20 ring-1 ring-primary"
+                    : "border-outline-variant hover:bg-surface-container-low"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="font-bold text-sm text-on-surface flex items-center gap-2">
+                    {c.name}
+                    {c.recommended && (
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-primary text-on-primary font-bold">
+                        RECOMMENDED
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-on-surface-variant">{c.description}</p>
+                </div>
+                <span
+                  className="font-extrabold text-sm text-primary whitespace-nowrap"
+                  style={{ color: "rgb(56, 105, 72)" }}
+                >
+                  Rp {c.price.toLocaleString("id-ID")}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <section className="max-h-[38dvh] overflow-y-auto pr-1 flex flex-col gap-3 custom-scrollbar">
-          {Array.from({ length: count }, (_, index) => (
-            <div key={index} className="p-3.5 rounded-xl bg-[#0b1c30] border border-[#213145]">
-              <div className="flex justify-between items-center mb-1.5">
-                <label
-                  htmlFor={`name${index}`}
-                  className="text-xs font-bold text-[#c3c0ff]"
-                >
-                  Nama Pengunjung {count > 1 ? `#${index + 1}` : ""}
-                </label>
-                {count > 1 && index === 0 && (
-                  <Tooltip label="Nama ini digunakan sebagai kontak utama pembeli">
-                    <span className="text-[10px] font-bold text-[#4f46e5] bg-[#4f46e5]/15 px-2 py-0.5 rounded-md border border-[#4f46e5]/30">
-                      Kontak Utama
-                    </span>
-                  </Tooltip>
+        {/* Quantity Selector */}
+        <div className="flex items-center justify-between pt-4 border-t border-outline-variant">
+          <div>
+            <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
+            <span className="text-xs text-on-surface-variant">Maksimal {maxTickets} tiket per pemesanan</span>
+          </div>
+          <div className="flex items-center border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
+            <button
+              type="button"
+              onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+              className="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm">remove</span>
+            </button>
+            <span className="w-10 text-center font-bold text-sm text-on-surface">
+              {ticketQuantity}
+            </span>
+            <button
+              type="button"
+              onClick={() => setTicketQuantity(Math.min(maxTickets, ticketQuantity + 1))}
+              className="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Visitor Names Inputs */}
+        <div className="space-y-3 pt-4 border-t border-outline-variant">
+          <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
+            Identitas Pengunjung ({ticketQuantity} Orang)
+          </label>
+          <div className="space-y-3">
+            {Array.from({ length: ticketQuantity }, (_, index) => (
+              <div key={index} className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant">
+                <div className="flex justify-between items-center mb-1.5">
+                  <label
+                    htmlFor={`name${index}`}
+                    className="text-xs font-bold text-on-surface"
+                  >
+                    Nama Pengunjung {ticketQuantity > 1 ? `#${index + 1}` : ""}
+                  </label>
+                  {ticketQuantity > 1 && index === 0 && (
+                    <Tooltip label="Nama ini digunakan sebagai kontak utama pembeli">
+                      <span className="text-[10px] font-bold text-primary bg-primary-container px-2 py-0.5 rounded-md border border-outline-variant">
+                        Kontak Utama
+                      </span>
+                    </Tooltip>
+                  )}
+                </div>
+                <input
+                  type="text"
+                  id={`name${index}`}
+                  name={`name${index}`}
+                  placeholder="Nama lengkap sesuai identitas"
+                  required
+                  minLength={3}
+                  maxLength={50}
+                  className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/60 px-3.5 py-2 text-xs outline-none transition-colors"
+                />
+                {isUsernameErr[index] && (
+                  <p className="text-red-500 text-[11px] mt-1 pl-1">
+                    Nama hanya boleh berisi huruf, angka, dan spasi (3-50 karakter)
+                  </p>
                 )}
               </div>
-              <input
-                type="text"
-                id={`name${index}`}
-                name={`name${index}`}
-                placeholder="Nama lengkap sesuai kartu identitas"
-                required
-                min={3}
-                max={50}
-                className="w-full rounded-lg bg-[#16263b] border border-[#213145] focus:border-[#4f46e5] text-white placeholder-[#777587] px-3.5 py-2 text-sm outline-none transition-colors"
-              />
-              {isUsernameErr[index] && (
-                <p className="text-red-400 text-xs mt-1 pl-1">
-                  Hanya boleh mengandung huruf dan angka
-                </p>
-              )}
-            </div>
-          ))}
-        </section>
+            ))}
+          </div>
+        </div>
 
-        <div className="p-3.5 rounded-xl bg-[#0b1c30] border border-[#213145]">
-          <label htmlFor="email" className="block text-xs font-bold text-[#c3c0ff] mb-1.5">
-            Email Aktif (Pengiriman Tiket QR)
+        {/* Email Input */}
+        <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant">
+          <label htmlFor="email" className="block text-xs font-bold text-on-surface mb-1.5">
+            Email Aktif (Pengiriman E-Tiket QR)
           </label>
           <input
             type="email"
@@ -212,32 +290,50 @@ export default function BuyModal({
             name="email"
             placeholder="contoh: nama@gmail.com"
             required
-            className="w-full rounded-lg bg-[#16263b] border border-[#213145] focus:border-[#4f46e5] text-white placeholder-[#777587] px-3.5 py-2 text-sm outline-none transition-colors"
+            className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/60 px-3.5 py-2 text-xs outline-none transition-colors"
           />
         </div>
 
-        <div className="flex justify-between items-center pt-3 border-t border-[#213145]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-xs font-bold text-[#9aa4bc] hover:text-white px-3 py-2 transition-colors cursor-pointer"
-          >
-            Batal
-          </button>
+        {/* Rincian Biaya Summary */}
+        <div className="bg-surface-container-low p-4 rounded-xl space-y-2 text-xs">
+          <div className="flex justify-between text-on-surface-variant">
+            <span>{ticketQuantity}x {currentCategoryObj.name}</span>
+            <span>Rp {ticketSubtotal.toLocaleString("id-ID")}</span>
+          </div>
+          <div className="flex justify-between text-on-surface-variant">
+            <span>Biaya Layanan &amp; Penanganan</span>
+            <span>Rp {serviceFee.toLocaleString("id-ID")}</span>
+          </div>
+          <div className="flex justify-between text-on-surface pt-2 border-t border-outline-variant font-bold text-sm">
+            <span>Total Bayar</span>
+            <span style={{ color: "rgb(56, 105, 72)" }}>
+              Rp {totalAmount.toLocaleString("id-ID")}
+            </span>
+          </div>
+        </div>
 
+        {/* Footer Actions */}
+        <div className="pt-2 flex flex-col gap-2">
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-[#4f46e5] text-white hover:bg-[#3525cd] font-bold text-xs sm:text-sm py-2.5 px-6 rounded-lg shadow-md shadow-[#4f46e5]/30 cursor-pointer active:scale-95 disabled:bg-[#213145] disabled:text-[#777587] disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+            className="w-full h-12 bg-primary text-on-primary rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:bg-surface-container-high disabled:text-on-surface-variant disabled:cursor-not-allowed"
+            style={!isLoading ? { backgroundColor: "rgb(56, 105, 72)" } : {}}
           >
-            <span>{isLoading ? "Memproses..." : isConfirm ? "Lanjut ke QRIS" : "Proses Pembayaran"}</span>
-            <span>→</span>
+            <span>
+              {isLoading
+                ? "Memproses..."
+                : isConfirm
+                ? "Bayar Sekarang via QRIS / Midtrans"
+                : "Lanjut ke Pembayaran"}
+            </span>
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </button>
+          <p className="text-[10px] text-center text-on-surface-variant flex items-center justify-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">shield</span>
+            Pembayaran terenkripsi &amp; aman via Midtrans / QRIS
+          </p>
         </div>
-
-        <p className="text-[10px] text-center text-[#777587] mt-1 flex items-center justify-center gap-1">
-          <span>🔒 Pembayaran terenkripsi & aman via Midtrans / QRIS</span>
-        </p>
       </form>
     </Modal>
   );
