@@ -166,8 +166,8 @@ export default function Content({
                 </div>
               </div>
 
-              {/* Bento Grid Schedule & Perks */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* Schedule Info */}
+              <div className="mb-8">
                 <div className="bg-surface border border-outline-variant rounded-2xl p-5 soft-shadow flex flex-col justify-center">
                   <h3 className="font-bold text-sm text-on-surface mb-3 flex items-center gap-2">
                     <span
@@ -196,38 +196,6 @@ export default function Content({
                       <span className="font-bold text-on-surface">
                         22:30 WIB
                       </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-surface border border-outline-variant rounded-2xl p-5 soft-shadow flex flex-col justify-center">
-                  <h3 className="font-bold text-sm text-on-surface mb-3 flex items-center gap-2">
-                    <span
-                      className="material-symbols-outlined text-primary"
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      verified_user
-                    </span>
-                    Fasilitas Tiket
-                  </h3>
-                  <div className="space-y-2 text-xs text-on-surface-variant">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm text-primary">
-                        check_circle
-                      </span>
-                      <span>Akses Masuk Jalur Cepat (Fast-track)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm text-primary">
-                        check_circle
-                      </span>
-                      <span>E-Tiket Resmi &amp; QR Scan Instan</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-sm text-primary">
-                        check_circle
-                      </span>
-                      <span>Free Merch / Wristband Spesial</span>
                     </div>
                   </div>
                 </div>

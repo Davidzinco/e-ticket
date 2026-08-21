@@ -156,7 +156,7 @@ export default function BuyModal({
       {/* Header */}
       <div className="flex items-center justify-between p-5 sm:p-6 border-b border-outline-variant bg-surface-container-lowest">
         <div>
-          <h3 className="text-lg sm:text-xl font-extrabold text-on-surface">Pilih Tiket &amp; Data</h3>
+          <h3 className="text-lg sm:text-xl font-extrabold text-on-surface">Pemesanan Tiket</h3>
           <p className="text-xs text-on-surface-variant font-medium mt-0.5">
             {event?.title || "Bhima Night Carnival"} • SMAN 1 Madiun
           </p>
