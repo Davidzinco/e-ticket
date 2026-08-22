@@ -72,6 +72,7 @@ export default function Content({
       <main className="pt-20 px-4 sm:px-6 max-w-[1200px] mx-auto pb-36 font-sans text-on-surface">
         {/* Hero Section */}
         <section className="mb-8">
+          <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden ambient-shadow flex-shrink-0">
             {/* Banner Image & Badges */}
             <div className="h-64 md:h-96 w-full relative bg-surface-container-low overflow-hidden">
               <Image
