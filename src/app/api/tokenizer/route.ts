@@ -18,8 +18,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const isProduction =
+      process.env.MIDTRANS_IS_PRODUCTION === "true" ||
+      !serverKey.startsWith("SB-");
+
     const snap = new Midtrans.Snap({
-      isProduction: process.env.NODE_ENV === "production",
+      isProduction,
       serverKey,
       clientKey,
     });
