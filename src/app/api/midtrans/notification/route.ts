@@ -101,6 +101,7 @@ export async function POST(req: NextRequest) {
               qr_code: qrcode,
               id_event: dataPayment.event_id,
               name: dataPayment.name[i],
+              nik: dataPayment.nik?.[i] || "-",
               email: dataPayment.email,
               isScanned: false,
               transaction_id,

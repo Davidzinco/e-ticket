@@ -1,11 +1,10 @@
 "use client";
-import Image from "next/image";
-import Counter from "./counter";
 import { useEffect, useState } from "react";
-import { toIdr } from "../../utils/toIdr";
-import { EventInterface } from "../../interfaces/event";
+import Image from "next/image";
 import useSWR from "swr";
+import { EventInterface } from "../../interfaces/event";
 import BuyModal from "../../layouts/modalLayouts/buyModal";
+import toDate from "../../utils/toDate";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -19,30 +18,40 @@ export default function Content({
   const [count, setCount] = useState<number>(1);
   const [isSoldOut, setIsSoldOut] = useState<boolean>(false);
   const [openBuyModal, setOpenBuyModal] = useState<boolean>(false);
+
   useEffect(() => {
-    const snapScript = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ?? "";
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
-    const script = document.createElement("script");
-    script.src = snapScript;
-    script.setAttribute("data-client-key", clientKey!);
-    script.async = true;
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+    const isProdKey = clientKey && !clientKey.startsWith("SB-");
+    const defaultSnapUrl = isProdKey
+      ? "https://app.midtrans.com/snap/snap.js"
+      : "https://app.sandbox.midtrans.com/snap/snap.js";
 
-    document.body.appendChild(script);
+    const snapScript =
+      process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || defaultSnapUrl;
 
-    return () => {
-      document.body.removeChild(script);
-    };
+    if (snapScript && !document.querySelector(`script[src="${snapScript}"]`)) {
+      const script = document.createElement("script");
+      script.src = snapScript;
+      if (clientKey) script.setAttribute("data-client-key", clientKey);
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, []);
 
   useEffect(() => {
     if (!detailEvent) return;
-
     const closeTime = detailEvent?.closeTime?.seconds
       ? new Date(detailEvent.closeTime.seconds * 1000)
       : null;
 
-    if (detailEvent.isSoldOut || (closeTime && new Date() > closeTime)) {
+    if (
+      detailEvent.isSoldOut === true ||
+      (closeTime && new Date() > closeTime) ||
+      (typeof detailEvent.ticket === "number" && detailEvent.ticket <= 0)
+    ) {
       setIsSoldOut(true);
+    } else {
+      setIsSoldOut(false);
     }
   }, [detailEvent]);
 
@@ -50,169 +59,237 @@ export default function Content({
     data: event,
     error,
     mutate,
-  } = useSWR<EventInterface>(`/api/event?id=${slug}`, fetcher, {
+  } = useSWR<EventInterface>(slug ? `/api/event?id=${slug}` : null, fetcher, {
     fallbackData: detailEvent,
   });
 
-  if (error) {
-    return (
-      <p className="text-red-500 text-center mt-5">Failed to fetch event</p>
-    );
-  }
-
-  // const handleCheckoutInvalid = (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   if (!name || !email) {
-  //     toast.error("Mohon isi nama dan email");
-  //     return;
-  //   }
-
-  //   return toast.info("Maaf Saat ini pembayaran belum tersedia ");
-  // };
-
-  const handleBuyTicket = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setOpenBuyModal(true);
-    return;
-  };
+  const currentEvent = event || detailEvent;
+  const ticketPrice = currentEvent?.price || 45000;
+  const formattedPrice = `Rp ${ticketPrice.toLocaleString("id-ID")}`;
 
   return (
     <>
-      {event && (
-        <main className="bg-[#0b0105] backdrop-blur-2xl flex flex-col mx-auto select-none">
-          <section className="h-full w-full bg-[#770b4d] relative mx-auto">
-            <Image
-              src={"/images/bnc_2025/tree_(right).webp"}
-              alt="tree"
-              width={1000}
-              height={1000}
-              className="absolute right-0 top-[-12%] w-[38%] h-auto z-10"
-            ></Image>
-            <div className="w-full min-h-full flex justify-center items-center relative">
+      <main className="pt-20 px-4 sm:px-6 max-w-[1200px] mx-auto pb-36 font-sans text-on-surface">
+        {/* Hero Section */}
+        <section className="mb-8">
+            {/* Banner Image & Badges */}
+            <div className="h-64 md:h-96 w-full relative bg-surface-container-low overflow-hidden">
               <Image
-                src={"/images/bnc_2025/stars_falling.webp"}
-                alt="stars_failling"
-                width={500}
-                height={500}
-                className="absolute left-[4%] top-[3%] w-[40%] h-auto z-[0]"
+                alt={currentEvent?.title || "Bhima Night Carnival"}
+                className="w-full h-full object-cover"
+                src="/images/bnc_2025/bhima_night_carnival26.png"
+                width={1200}
+                height={600}
+                priority
               />
 
-              <Image
-                src={"/images/bnc_2025/sky_haze.webp"}
-                alt="sky haze"
-                width={500}
-                height={500}
-                className="absolute top-[10%] w-full h-auto z-[0]"
-              />
-              <Image
-                src={"/images/bnc_2025/sky_haze_bottom.webp"}
-                alt="sky haze bottom"
-                width={500}
-                height={500}
-                className="absolute top-[58%] w-full h-auto z-[0]"
-              />
-
-              <Image
-                src={"/images/bnc_2025/the_moon.webp"}
-                alt="moon"
-                width={1000}
-                height={1000}
-                className="w-full h-auto z-[1] blur-[2px]"
-              />
-
-              <Image
-                src={"/images/bnc_2025/bhima_night_carnival26.webp"}
-                alt="bnc"
-                width={1000}
-                height={1000}
-                className="absolute left-1/2 top-[30%] -translate-x-1/2
-               w-[60%] max-w-[800px] h-auto z-[2]"
-              />
-            </div>
-          </section>
-          <section className="w-full bg-[#0b0105] px-7 flex flex-col gap-0 relative z-50">
-            <Image
-              src={"/images/bnc_2025/hills.webp"}
-              alt="hills"
-              width={1000}
-              height={1000}
-              className="w-full h-auto absolute left-0 top-0 -translate-y-[60%] z-[3]"
-            />
-            <section className="w-full absolute left-0 top-0 -translate-y-[25%] z-[4] overflow-hidden">
-              <div className="w-full relative h-auto overflow-hidden">
-                <Image
-                  src={"/images/bnc_2025/IMG_3975.webp"}
-                  alt="IMG_3975"
-                  width={1000}
-                  height={1000}
-                  className="w-full h-auto object-cover object-center"
-                />
+              {/* Date Badge */}
+              <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-2 rounded-xl flex flex-col items-center border border-outline-variant shadow-sm">
+                <span className="font-bold text-xs text-primary uppercase tracking-wider">
+                  Dec
+                </span>
+                <span className="text-xl font-extrabold text-on-surface leading-none">
+                  15
+                </span>
               </div>
-              <Image
-                src={"/images/bnc_2025/haze.webp"}
-                alt="haze"
-                width={1000}
-                height={1000}
-                className="absolute top-1/7 left-0 w-full h-auto"
-              />
-            </section>
-
-            {/* container description */}
-            <div className="bg-transparent max-w-3xl mx-auto text-justify relative z-[10] mt-52">
-              <div className="border p-4 rounded-xl">
-                <div className="absolute left-0 top-0 w-full h-full bg-[#3e042c] blur-xl rounded-2xl z-[-1]"></div>
-                <p className="text-white sm:text-2xl sm:leading-[32px]">
-                  {detailEvent.description}
-                </p>
+              {/* Category Chip */}
+              <div className="absolute top-4 left-4 bg-surface-container-highest/90 backdrop-blur-md text-on-surface px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                <span
+                  className="material-symbols-outlined text-[16px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  festival
+                </span>
+                Carnival
               </div>
-              {isSoldOut ? (
-                <p className="text-center sm:text-lg text-[13px] text-yellow-400/90 mt-3">
-                  {`Ticket Sudah Habis!`}
-                </p>
-              ) : (
-                <p className="text-center sm:text-lg text-[13px] text-yellow-400/90 mt-3">
-                  {`Sisa Tiket : ${detailEvent.ticket}`}
-                </p>
-              )}
             </div>
-            {/* container form */}
-            <form
-              action=""
-              onSubmit={(e) => handleBuyTicket(e)}
-              className="bg-transparent relative flex flex-col p-5 gap-7 rounded-xl mx-auto w-full max-w-3xl z-10 text-white"
-            >
-              <div className="absolute left-0 top-0 w-full h-full bg-[#3e042c] blur-xl rounded-2xl z-[-1]"></div>
-              <aside className="w-full rounded-lg flex justify-between items-center">
-                <Counter
-                  maxCount={isSoldOut ? 0 : detailEvent.ticket}
-                  count={count}
-                  setCount={setCount}
-                />
-                <div className="flex gap-2 sm:gap-5 items-center">
-                  <p className="text-white sm:text-xl">
-                    {toIdr(event?.price * count)}
-                  </p>
+
+            {/* Content Details */}
+            <div className="p-6 md:p-8">
+              <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-secondary-container text-on-secondary-container rounded-md mb-3">
+                <span className="material-symbols-outlined text-[14px]">
+                  festival
+                </span>
+                <span className="font-bold text-[10px] uppercase tracking-wider">
+                  {currentEvent?.sub_title || "Official E-Ticket Platform"}
+                </span>
+              </div>
+              <h1 className="text-2xl md:text-4xl font-extrabold text-on-surface mb-2 tracking-tight">
+                {currentEvent?.title || "Bhima Night Carnival"}
+              </h1>
+              <p className="text-sm md:text-base text-on-surface-variant mb-6 leading-relaxed">
+                {currentEvent?.description ||
+                  "Experience the magic of the night with spectacular lights, live performances, and incredible food. A night to remember!"}
+              </p>
+
+              {/* Event Metadata (Date, Time, Venue) */}
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start">
+                  <div className="bg-surface-container p-2.5 rounded-xl mr-4 flex-shrink-0 text-primary">
+                    <span className="material-symbols-outlined">
+                      calendar_today
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-on-surface">
+                      Tanggal &amp; Waktu
+                    </h4>
+                    <p className="text-xs md:text-sm text-on-surface-variant">
+                      {currentEvent?.timestamp
+                        ? toDate(currentEvent.timestamp).toLocaleDateString("id-ID", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Desember 15, 2024"}{" "}
+                      • 18:00 - Selesai
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-surface-container p-2.5 rounded-xl mr-4 flex-shrink-0 text-primary">
+                    <span className="material-symbols-outlined">
+                      location_on
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-on-surface">
+                      Lokasi / Venue
+                    </h4>
+                    <p className="text-xs md:text-sm text-on-surface-variant">
+                      {currentEvent?.location || "SMAN 1 Madiun Arena"}
+                    </p>
+                    <a
+                      className="font-bold text-primary hover:underline text-xs mt-1 inline-block"
+                      href="https://maps.app.goo.gl/hRgrNxkrjeSoJT1x9"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Lihat di Peta →
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Schedule Info */}
+              <div className="mb-8">
+                <div className="bg-surface border border-outline-variant rounded-2xl p-5 soft-shadow flex flex-col justify-center">
+                  <h3 className="font-bold text-sm text-on-surface mb-3 flex items-center gap-2">
+                    <span
+                      className="material-symbols-outlined text-primary"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      schedule
+                    </span>
+                    Jadwal Event
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-on-surface-variant">
+                    <div className="flex justify-between items-center">
+                      <span>Open Gate</span>
+                      <span className="font-bold text-on-surface">
+                        16:00 WIB
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* About Section */}
+              <section className="mb-8">
+                <h3 className="text-lg font-extrabold text-on-surface mb-2">
+                  Tentang Acara
+                </h3>
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Festival Bhima Night Carnival menghadirkan pertunjukan seni akbar, kolaborasi musik, dan kehangatan kebersamaan keluarga besar SMA Negeri 1 Madiun. Beli tiket sekarang untuk menikmati pengalaman luar biasa!
+                </p>
+              </section>
+
+              {/* Desktop / Inline Price & Action */}
+              <div className="border-t border-outline-variant pt-6">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="flex flex-col w-full md:w-auto text-center md:text-left">
+                    <span className="text-xs text-on-surface-variant font-medium">
+                      Harga tiket mulai dari
+                    </span>
+                    <span
+                      className="text-2xl font-extrabold text-primary"
+                      style={{ color: "rgb(56, 105, 72)" }}
+                    >
+                      {formattedPrice}
+                    </span>
+                  </div>
                   <button
-                    disabled={count > detailEvent.ticket || isSoldOut}
-                    type="submit"
-                    className={`bg-[#873567] py-1 rounded-lg text-white cursor-pointer hover:bg-[#873567]/80 transition-all disabled:bg-gray-600 disabled:cursor-not-allowed sm:text-xl ${
-                      isSoldOut ? "px-3" : "px-4"
+                    type="button"
+                    disabled={isSoldOut}
+                    onClick={() => setOpenBuyModal(true)}
+                    className={`w-full md:w-auto font-bold text-sm px-8 py-4 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2 ${
+                      isSoldOut
+                        ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
+                        : "bg-primary text-on-primary hover:opacity-90"
                     }`}
+                    style={
+                      !isSoldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}
+                    }
                   >
-                    {isSoldOut ? "Tiket Habis" : "Beli Tiket"}
+                    <span>{isSoldOut ? "Tiket Habis" : "Pilih Tiket"}</span>
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      confirmation_number
+                    </span>
                   </button>
                 </div>
-              </aside>
-            </form>
-          </section>
-        </main>
-      )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Universal Sticky Bottom CTA (Visible across all screen sizes) */}
+        <div className="fixed bottom-16 left-0 w-full bg-surface/95 backdrop-blur-md border-t border-outline-variant shadow-[0_-4px_16px_rgba(15,23,42,0.08)] z-40 p-3 sm:p-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] sm:text-xs text-on-surface-variant">
+                Mulai dari
+              </span>
+              <span
+                className="text-base sm:text-xl font-extrabold text-primary"
+                style={{ color: "rgb(56, 105, 72)" }}
+              >
+                {formattedPrice}
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={isSoldOut}
+              onClick={() => setOpenBuyModal(true)}
+              className={`flex-1 max-w-[240px] py-3 px-5 sm:px-6 rounded-xl font-bold text-xs sm:text-sm active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer shadow-md ${
+                isSoldOut
+                  ? "bg-surface-container-high text-on-surface-variant cursor-not-allowed"
+                  : "bg-primary text-on-primary hover:opacity-90"
+              }`}
+              style={
+                !isSoldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}
+              }
+            >
+              <span>{isSoldOut ? "Habis" : "Pilih Tiket"}</span>
+              <span
+                className="material-symbols-outlined text-sm sm:text-base"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                confirmation_number
+              </span>
+            </button>
+          </div>
+        </div>
+      </main>
+
       {openBuyModal && (
         <BuyModal
           onClose={() => setOpenBuyModal(false)}
           count={count}
           mutate={mutate}
-          event={event}
+          event={currentEvent}
         />
       )}
     </>

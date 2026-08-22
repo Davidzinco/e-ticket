@@ -16,6 +16,34 @@
   --animate-fadeIn: fadeIn 0.3s ease-in-out forwards;
   --animate-fadeOut: fadeOut 0.3s ease-in-out forwards;
   --animate-popUp: popUp 0.5s ease-out forwards;
+
+  --color-surface: #f7faf4;
+  --color-surface-dim: #d3dcd3;
+  --color-surface-bright: #f7faf4;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f5ee;
+  --color-surface-container: #eaefe8;
+  --color-surface-container-high: #e4e9e3;
+  --color-surface-container-highest: #dee4dd;
+  --color-on-surface: #181d18;
+  --color-on-surface-variant: #414942;
+  --color-outline: #717971;
+  --color-outline-variant: #c1c9be;
+  --color-primary: #386948;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #b9efc5;
+  --color-on-primary-container: #2a593b;
+  --color-secondary: #516353;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d4e8d3;
+  --color-on-secondary-container: #0f1f12;
+  --color-tertiary: #39656b;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #bdeaf1;
+  --color-on-tertiary-container: #001f23;
+  --color-background: #f8f9ff;
+  --color-on-background: #0b1c30;
+  --color-surface-variant: #dde5d9;
 }
 
 @keyframes fadeIn {
@@ -219,4 +247,23 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.ticket-stub-mask {
+  mask-image: radial-gradient(circle at 0 50%, transparent 8px, black 8.5px), radial-gradient(circle at 100% 50%, transparent 8px, black 8.5px);
+  mask-size: 51% 100%;
+  mask-repeat: no-repeat;
+  mask-position: left, right;
+  -webkit-mask-image: radial-gradient(circle at 0 50%, transparent 8px, black 8.5px), radial-gradient(circle at 100% 50%, transparent 8px, black 8.5px);
+  -webkit-mask-size: 51% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: left, right;
+}
+
+.soft-shadow, .custom-shadow {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.ambient-shadow {
+  box-shadow: 0 4px 12px rgba(24, 29, 23, 0.06);
 }

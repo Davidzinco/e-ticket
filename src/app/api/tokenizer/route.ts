@@ -3,30 +3,75 @@ import Midtrans from "midtrans-client";
 import validator from "validator";
 import { db } from "@/libs/firebase/admin";
 
-const snap = new Midtrans.Snap({
-  isProduction: process.env.NODE_ENV === "production",
-  serverKey: process.env.MIDTRANS_SERVER_KEY ?? "",
-  clientKey: process.env.MIDTRANS_CLIENT_KEY ?? "",
-});
-
 export async function POST(req: NextRequest) {
   try {
-    const { orderId, eventId, productName, price, quantity, names, email } =
+    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+
+    if (!serverKey || !clientKey) {
+      return NextResponse.json(
+        {
+          message:
+            "Kunci Midtrans (MIDTRANS_SERVER_KEY / MIDTRANS_CLIENT_KEY) belum dikonfigurasi di file .env. Silakan masukkan kunci Midtrans Anda untuk mengaktifkan pembayaran.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const isProduction =
+      process.env.MIDTRANS_IS_PRODUCTION === "true" ||
+      !serverKey.startsWith("SB-");
+
+    const snap = new Midtrans.Snap({
+      isProduction,
+      serverKey,
+      clientKey,
+    });
+
+    const { orderId, eventId, productName, price, quantity, names, niks, email } =
       await req.json();
+
     const usernameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
     for (const name of names) {
       if (!usernameRegex.test(name)) {
         return NextResponse.json(
-          { message: "Invalid username" },
+          { message: "Format nama tidak valid (3-50 karakter)" },
           { status: 400 }
         );
       }
     }
 
     const trimmedNames = names.map((n: string) => n.trim());
+    const rawNiks = Array.isArray(niks)
+      ? niks.map((nik: string) => String(nik).trim())
+      : typeof niks === "string" && niks.trim()
+      ? [niks.trim()]
+      : [];
+
+    const nikRegex = /^[0-9]{10,20}$/;
+    if (rawNiks.length === 0) {
+      return NextResponse.json(
+        { message: "NIK kontak utama wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    for (const nik of rawNiks) {
+      if (!nikRegex.test(nik)) {
+        return NextResponse.json(
+          { message: "Format NIK tidak valid (harus 10-20 digit angka)" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const populatedNiks =
+      rawNiks.length === 1 && quantity > 1
+        ? Array(quantity).fill(rawNiks[0])
+        : rawNiks;
 
     if (!validator.isEmail(email)) {
-      return NextResponse.json({ message: "Invalid email" }, { status: 400 });
+      return NextResponse.json({ message: "Format email tidak valid" }, { status: 400 });
     }
 
     const existingPayment = await db
@@ -37,7 +82,7 @@ export async function POST(req: NextRequest) {
 
     if (!existingPayment.empty) {
       return NextResponse.json(
-        { message: "Duplicate order ID" },
+        { message: "Order ID duplikat" },
         { status: 400 }
       );
     }
@@ -86,6 +131,7 @@ export async function POST(req: NextRequest) {
         transaction.set(paymentRef, {
           status: "pending",
           name: trimmedNames,
+          nik: populatedNiks,
           email,
           order_id: orderId,
           event_id: eventId,
@@ -106,7 +152,7 @@ export async function POST(req: NextRequest) {
         ) {
           throw new Error("Invalid email");
         }
-        throw new Error("Midtrans transaction failed");
+        throw new Error("Midtrans transaction failed: pastikan Server Key Midtrans valid");
       }
     });
 
@@ -116,7 +162,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: err.message }, { status: 500 });
     }
     return NextResponse.json(
-      { message: "Something went wrong" },
+      { message: "Terjadi kesalahan server saat memproses transaksi" },
       { status: 500 }
     );
   }
