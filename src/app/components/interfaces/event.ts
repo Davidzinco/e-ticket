@@ -4,6 +4,8 @@ export interface TicketPackageInterface {
   id: string;
   name: string;
   price: number;
+  ticket?: number;
+  quota?: number;
   badge?: string;
   badgeBg?: string;
   badgeText?: string;
@@ -18,6 +20,8 @@ export interface EventInterface {
   price: number;
   price_festival?: number;
   price_vip?: number;
+  ticket_festival?: number;
+  ticket_vip?: number;
   packages?: TicketPackageInterface[];
   ticket_types?: TicketPackageInterface[];
   src: string;

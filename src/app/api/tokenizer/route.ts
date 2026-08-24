@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       clientKey,
     });
 
-    const { orderId, eventId, productName, price, quantity, names, niks, email } =
+    const { orderId, eventId, productName, packageId, price, quantity, names, niks, email } =
       await req.json();
 
     const usernameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
@@ -100,11 +100,41 @@ export async function POST(req: NextRequest) {
         throw new Error("Event data missing");
       }
 
+      // Check overall stock
       if (eventData.ticket - quantity < 0) {
-        throw new Error("Ticket not enough");
+        throw new Error("Tiket sudah tidak mencukupi");
       }
 
-      transaction.update(eventRef, { ticket: eventData.ticket - quantity });
+      // Prepare updates for package-specific stock
+      const updates: { [key: string]: any } = {
+        ticket: eventData.ticket - quantity,
+      };
+
+      if (packageId === "VIP" && eventData.ticket_vip !== undefined) {
+        if (eventData.ticket_vip - quantity < 0) {
+          throw new Error("Tiket VIP sudah habis atau tidak mencukupi");
+        }
+        updates.ticket_vip = eventData.ticket_vip - quantity;
+      } else if (packageId === "FESTIVAL" && eventData.ticket_festival !== undefined) {
+        if (eventData.ticket_festival - quantity < 0) {
+          throw new Error("Tiket Festival sudah habis atau tidak mencukupi");
+        }
+        updates.ticket_festival = eventData.ticket_festival - quantity;
+      }
+
+      if (Array.isArray(eventData.packages)) {
+        updates.packages = eventData.packages.map((pkg: any) => {
+          if (pkg.id === packageId && typeof pkg.ticket === "number") {
+            if (pkg.ticket - quantity < 0) {
+              throw new Error(`Tiket ${pkg.name || packageId} sudah habis`);
+            }
+            return { ...pkg, ticket: pkg.ticket - quantity };
+          }
+          return pkg;
+        });
+      }
+
+      transaction.update(eventRef, updates);
 
       const parameter = {
         transaction_details: {
@@ -136,13 +166,15 @@ export async function POST(req: NextRequest) {
           order_id: orderId,
           event_id: eventId,
           ticket: quantity,
+          package_id: packageId || "FESTIVAL",
           event_name: productName,
           createdAt: new Date(),
         });
 
         return { token };
       } catch (err: unknown) {
-        transaction.update(eventRef, { ticket: eventData.ticket });
+        // Rollback stock
+        transaction.update(eventRef, eventData);
         if (
           typeof err === "object" &&
           err !== null &&

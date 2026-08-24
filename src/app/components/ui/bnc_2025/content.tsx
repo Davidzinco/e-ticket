@@ -87,7 +87,7 @@ export default function Content({
               {/* Date Badge */}
               <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-2 rounded-xl flex flex-col items-center border border-outline-variant shadow-sm">
                 <span className="font-bold text-xs text-primary uppercase tracking-wider">
-                  Dec
+                  Sep
                 </span>
                 <span className="text-xl font-extrabold text-on-surface leading-none">
                   5
@@ -142,7 +142,7 @@ export default function Content({
                             month: "long",
                             year: "numeric",
                           })
-                        : "Desember 5, 2026"}{" "}
+                        : "September 5, 2026"}{" "}
                       • 16:00 - Selesai
                     </p>
                   </div>
