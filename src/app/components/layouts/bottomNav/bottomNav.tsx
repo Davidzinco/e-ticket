@@ -20,7 +20,7 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
       if (tab === "info") {
         router.push("/");
       } else if (tab === "myticket") {
-        router.push("/success");
+        router.push("/myticket");
       }
     }
   };

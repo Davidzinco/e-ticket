@@ -94,7 +94,7 @@ function SuccessContent() {
                     Official E-Ticket
                   </span>
                   <h3 className="text-lg font-bold text-on-surface">Bhima Night Carnival</h3>
-                  <p className="text-xs text-on-surface-variant">Desember 15, 2024 • 18:00 WIB</p>
+                  <p className="text-xs text-on-surface-variant">Desember 5, 2024 • 18:00 WIB</p>
                 </div>
                 <div
                   className="px-3 py-1 rounded-full text-xs font-bold"
@@ -148,10 +148,16 @@ function SuccessContent() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 w-full pt-4">
+              <Link
+                href="/myticket"
+                className="flex-1 py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-md text-center"
+                style={{ backgroundColor: "rgb(56, 105, 72)" }}
+              >
+                <span className="material-symbols-outlined text-sm">local_activity</span> Buka My Ticket
+              </Link>
               <button
                 onClick={() => window.print()}
-                className="flex-1 py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-md"
-                style={{ backgroundColor: "rgb(56, 105, 72)" }}
+                className="flex-1 py-3 px-4 bg-surface border border-outline-variant text-on-surface rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-surface-container transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">download</span> Download E-Ticket
               </button>

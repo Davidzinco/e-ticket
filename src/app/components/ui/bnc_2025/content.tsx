@@ -90,7 +90,7 @@ export default function Content({
                   Dec
                 </span>
                 <span className="text-xl font-extrabold text-on-surface leading-none">
-                  15
+                  5
                 </span>
               </div>
               {/* Category Chip */}
@@ -142,8 +142,8 @@ export default function Content({
                             month: "long",
                             year: "numeric",
                           })
-                        : "Desember 15, 2024"}{" "}
-                      • 18:00 - Selesai
+                        : "Desember 5, 2026"}{" "}
+                      • 16:00 - Selesai
                     </p>
                   </div>
                 </div>
