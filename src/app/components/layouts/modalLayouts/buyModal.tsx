@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import Modal from "../../common/modal";
-import { EventInterface } from "../../interfaces/event";
+import { EventInterface, TicketPackageInterface } from "../../interfaces/event";
 import { v4 as uuidv4 } from "uuid";
 
 export default function BuyModal({
@@ -16,13 +16,54 @@ export default function BuyModal({
   mutate: () => void;
   event: EventInterface | undefined;
 }) {
+  // 1. Ambil opsi paket tiket dari Firebase jika tersedia (event.packages / event.ticket_types)
+  // Atau buat opsi default berbasis price_festival dan price_vip dari Firebase
+  const basePrice = event?.price && event.price > 0 ? event.price : 35000;
+  const festivalPrice = event?.price_festival ?? event?.price ?? basePrice;
+  const vipPrice =
+    event?.price_vip ??
+    (event?.price ? Math.round((event.price * 1.75) / 1000) * 1000 : 60000);
+
+  const availablePackages: TicketPackageInterface[] =
+    event?.packages && event.packages.length > 0
+      ? event.packages
+      : event?.ticket_types && event.ticket_types.length > 0
+      ? event.ticket_types
+      : [
+          {
+            id: "FESTIVAL",
+            name: "FESTIVAL",
+            price: festivalPrice,
+            badge: "POPULER",
+            badgeBg: "rgb(185, 239, 197)",
+            badgeText: "rgb(42, 91, 59)",
+            description: "Akses area festival, standing area & panggung utama",
+          },
+          {
+            id: "VIP",
+            name: "VIP",
+            price: vipPrice,
+            badge: "PREMIUM",
+            badgeBg: "rgb(254, 240, 138)",
+            badgeText: "rgb(133, 77, 14)",
+            description: "Akses baris depan + tempat duduk khusus & fast lane",
+          },
+        ];
+
+  const [selectedPackageId, setSelectedPackageId] = useState<string>(
+    availablePackages[0]?.id || "FESTIVAL"
+  );
   const [ticketQuantity, setTicketQuantity] = useState<number>(initialCount);
   const [isUsernameErr, setIsUsernameErr] = useState<{ [key: number]: boolean }>({});
   const [isNikErr, setIsNikErr] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const ticketPrice = event?.price || 0;
-  const totalAmount = ticketPrice * ticketQuantity;
+  const selectedPackage =
+    availablePackages.find((p) => p.id === selectedPackageId) ||
+    availablePackages[0];
+
+  const activeTicketPrice = selectedPackage?.price || festivalPrice;
+  const totalAmount = activeTicketPrice * ticketQuantity;
   const maxTickets = event?.ticket && event.ticket > 0 ? event.ticket : 999;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,8 +115,8 @@ export default function BuyModal({
       const payload = {
         orderId,
         eventId: event?.id || "5W7jcnr28tGc5E8tywRl",
-        productName: event?.title || "Bhima Night Carnival",
-        price: ticketPrice,
+        productName: `${event?.title || "Bhima Night Carnival"} - ${selectedPackage.name}`,
+        price: activeTicketPrice,
         quantity: ticketQuantity,
         email,
         names,
@@ -163,25 +204,78 @@ export default function BuyModal({
 
       {/* Form & Selection Content */}
       <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[75dvh] overflow-y-auto">
-        {/* Info Tiket dari Firebase */}
-        <div className="p-4 rounded-xl border border-primary bg-primary-container/20 ring-1 ring-primary flex items-start justify-between gap-4">
-          <div className="space-y-0.5">
-            <div className="font-bold text-sm text-on-surface flex items-center gap-2">
-              {event?.title || "Official E-Ticket"}
-              <span className="px-2 py-0.5 rounded text-[10px] bg-primary text-on-primary font-bold">
-                RESMI
-              </span>
-            </div>
-            <p className="text-xs text-on-surface-variant">
-              {event?.sub_title || "Akses masuk resmi acara Bhima Night Carnival"}
-            </p>
+        {/* Pilihan Paket Tiket dari Firebase */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
+            Pilih Paket / Tipe Tiket
+          </label>
+          <div className="grid grid-cols-1 gap-2.5">
+            {availablePackages.map((pkg) => {
+              const isSelected = selectedPackageId === pkg.id;
+
+              return (
+                <button
+                  key={pkg.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPackageId(pkg.id);
+                    setIsUsernameErr({});
+                  }}
+                  className={`w-full p-3.5 rounded-xl border text-left flex items-start justify-between gap-3 transition-all cursor-pointer ${
+                    isSelected
+                      ? "border-primary bg-primary-container/20 ring-2 ring-primary shadow-xs"
+                      : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low"
+                  }`}
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div
+                      className={`w-5 h-5 rounded-full border flex items-center justify-center mt-0.5 flex-shrink-0 transition-colors ${
+                        isSelected
+                          ? "border-primary bg-primary text-on-primary"
+                          : "border-outline-variant bg-surface"
+                      }`}
+                    >
+                      {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-extrabold text-sm text-on-surface">
+                          {pkg.name}
+                        </span>
+                        {pkg.badge && (
+                          <span
+                            className="px-2 py-0.5 rounded text-[10px] font-bold"
+                            style={{
+                              backgroundColor: pkg.badgeBg || "rgb(185, 239, 197)",
+                              color: pkg.badgeText || "rgb(42, 91, 59)",
+                            }}
+                          >
+                            {pkg.badge}
+                          </span>
+                        )}
+                      </div>
+                      {pkg.description && (
+                        <p className="text-xs text-on-surface-variant">
+                          {pkg.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span
+                      className="font-extrabold text-sm text-primary block whitespace-nowrap"
+                      style={{ color: "rgb(56, 105, 72)" }}
+                    >
+                      Rp {Number(pkg.price || 0).toLocaleString("id-ID")}
+                    </span>
+                    <span className="text-[10px] text-on-surface-variant">
+                      / tiket
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <span
-            className="font-extrabold text-base text-primary whitespace-nowrap"
-            style={{ color: "rgb(56, 105, 72)" }}
-          >
-            Rp {ticketPrice.toLocaleString("id-ID")}
-          </span>
         </div>
 
         {/* Quantity Selector */}
@@ -189,7 +283,7 @@ export default function BuyModal({
           <div>
             <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
             <span className="text-xs text-on-surface-variant">
-              {event?.ticket ? `Tersedia ${event.ticket} tiket` : "Pilih jumlah tiket yang ingin dibeli"}
+              {event?.ticket ? `Tersedia ${event.ticket} tiket` : "Pilih jumlah tiket"}
             </span>
           </div>
           <div className="flex items-center border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
@@ -213,7 +307,7 @@ export default function BuyModal({
           </div>
         </div>
 
-        {/* Visitor Identitas (Hanya Nama Pengunjung per Orang) */}
+        {/* Visitor Identitas (Daftar Nama Pengunjung) */}
         <div className="space-y-3 pt-3 border-t border-outline-variant">
           <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
             Daftar Nama Pengunjung ({ticketQuantity} Orang)
@@ -267,7 +361,7 @@ export default function BuyModal({
                 required
                 minLength={10}
                 maxLength={20}
-                className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors"
+                className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors font-mono"
               />
               {isNikErr && (
                 <p className="text-red-500 text-[11px] mt-1">
@@ -296,8 +390,8 @@ export default function BuyModal({
         {/* Rincian Biaya Summary */}
         <div className="bg-surface-container-low p-4 rounded-xl space-y-1.5 text-xs">
           <div className="flex justify-between text-on-surface-variant">
-            <span>{ticketQuantity}x {event?.title || "Tiket"}</span>
-            <span>Rp {(ticketPrice * ticketQuantity).toLocaleString("id-ID")}</span>
+            <span>{ticketQuantity}x Tiket {selectedPackage.name}</span>
+            <span>Rp {totalAmount.toLocaleString("id-ID")}</span>
           </div>
           <div className="flex justify-between text-on-surface pt-2 border-t border-outline-variant font-bold text-sm">
             <span>Total Bayar</span>

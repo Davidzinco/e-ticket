@@ -94,7 +94,7 @@ function SuccessContent() {
                     Official E-Ticket
                   </span>
                   <h3 className="text-lg font-bold text-on-surface">Bhima Night Carnival</h3>
-                  <p className="text-xs text-on-surface-variant">Desember 15, 2024 • 18:00 WIB</p>
+                  <p className="text-xs text-on-surface-variant">Desember 5, 2026 • 16:00 WIB</p>
                 </div>
                 <div
                   className="px-3 py-1 rounded-full text-xs font-bold"
