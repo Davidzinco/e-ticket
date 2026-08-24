@@ -78,7 +78,7 @@ export default function Content({
               <Image
                 alt={currentEvent?.title || "Bhima Night Carnival"}
                 className="w-full h-full object-cover"
-                src="/images/bnc_2025/bhima_night_carnival26.png"
+                src="/images/bnc_2025/bhima_night_carnival26.webp"
                 width={1200}
                 height={600}
                 priority
