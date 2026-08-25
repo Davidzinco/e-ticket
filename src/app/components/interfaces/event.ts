@@ -1,4 +1,7 @@
-import { Timestamp } from "firebase/firestore";
+export interface EventTimestamp {
+  seconds: number;
+  nanoseconds?: number;
+}
 
 export interface TicketPackageInterface {
   id: string;
@@ -18,12 +21,14 @@ export interface EventInterface {
   price: number;
   price_festival?: number;
   price_vip?: number;
+  ticket_festival?: number;
+  ticket_vip?: number;
   packages?: TicketPackageInterface[];
   ticket_types?: TicketPackageInterface[];
   src: string;
   sub_title: string;
   ticket: number;
-  timestamp: Timestamp;
+  timestamp: EventTimestamp;
   title: string;
-  closeTime: Timestamp;
+  closeTime: EventTimestamp;
 }

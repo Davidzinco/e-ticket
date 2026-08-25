@@ -17,25 +17,89 @@ import { LoginGooglePropsInterface } from "@/app/components/interfaces/loginGoog
 import { db } from "./admin";
 import { firestore } from "./init";
 
-export async function retrieveData(collectionName: string) {
-  const snapshot = await getDocs(collection(firestore, collectionName));
-  const data = snapshot.docs.map((doc) => {
-    const rawData = doc.data() as any;
-    if (rawData && rawData.isSoldout !== undefined) {
-      rawData.isSoldOut = rawData.isSoldout;
+function serializeFirestoreDoc(docId: string, rawData: any): any {
+  if (!rawData) return null;
+  const result: any = { id: docId, ...rawData };
+
+  if (result.timestamp) {
+    if (typeof result.timestamp.seconds === "number") {
+      result.timestamp = {
+        seconds: result.timestamp.seconds,
+        nanoseconds: result.timestamp.nanoseconds ?? 0,
+      };
+    } else if (typeof result.timestamp._seconds === "number") {
+      result.timestamp = {
+        seconds: result.timestamp._seconds,
+        nanoseconds: result.timestamp._nanoseconds ?? 0,
+      };
     }
-    return { id: doc.id, ...rawData };
-  });
-  return data;
+  }
+
+  if (result.closeTime) {
+    if (typeof result.closeTime.seconds === "number") {
+      result.closeTime = {
+        seconds: result.closeTime.seconds,
+        nanoseconds: result.closeTime.nanoseconds ?? 0,
+      };
+    } else if (typeof result.closeTime._seconds === "number") {
+      result.closeTime = {
+        seconds: result.closeTime._seconds,
+        nanoseconds: result.closeTime._nanoseconds ?? 0,
+      };
+    }
+  }
+
+  if (result.isSoldout !== undefined) {
+    result.isSoldOut = result.isSoldout;
+  }
+
+  // Ensure 100% plain serializable object for Next.js Server Component boundary
+  return JSON.parse(JSON.stringify(result));
+}
+
+export async function retrieveData(collectionName: string) {
+  try {
+    if (db) {
+      const snapshot = await db.collection(collectionName).get();
+      if (!snapshot.empty) {
+        return snapshot.docs.map((doc) => serializeFirestoreDoc(doc.id, doc.data()));
+      }
+    }
+  } catch (err) {
+    console.warn(`Admin retrieveData failed for ${collectionName}:`, err);
+  }
+
+  try {
+    const snapshot = await getDocs(collection(firestore, collectionName));
+    return snapshot.docs.map((doc) => serializeFirestoreDoc(doc.id, doc.data()));
+  } catch (err) {
+    console.error(`Client retrieveData failed for ${collectionName}:`, err);
+    return [];
+  }
 }
 
 export async function retrieveDataById(collectionName: string, id: string) {
-  const snapshot = await getDoc(doc(firestore, collectionName, id));
-  const data = snapshot.data() as any;
-  if (data && data.isSoldout !== undefined) {
-    data.isSoldOut = data.isSoldout;
+  try {
+    if (db) {
+      const snapshot = await db.collection(collectionName).doc(id).get();
+      if (snapshot.exists) {
+        return serializeFirestoreDoc(snapshot.id, snapshot.data());
+      }
+    }
+  } catch (err) {
+    console.warn(`Admin retrieveDataById failed for ${collectionName}/${id}:`, err);
   }
-  return data;
+
+  try {
+    const snapshot = await getDoc(doc(firestore, collectionName, id));
+    if (snapshot.exists()) {
+      return serializeFirestoreDoc(snapshot.id, snapshot.data());
+    }
+  } catch (err) {
+    console.error(`Client retrieveDataById failed for ${collectionName}/${id}:`, err);
+  }
+
+  return null;
 }
 
 export async function retrieveDataByField(
@@ -43,22 +107,28 @@ export async function retrieveDataByField(
   field: string,
   value: string
 ) {
-  const q = query(
-    collection(firestore, collectionName),
-    where(field, "==", value)
-  );
-  const snapshot = await getDocs(q);
-  const data = snapshot.docs.map((doc) => {
-    const rawData = doc.data() as any;
-    if (rawData && rawData.isSoldout !== undefined) {
-      rawData.isSoldOut = rawData.isSoldout;
+  try {
+    if (db) {
+      const snap = await db.collection(collectionName).where(field, "==", value).get();
+      if (!snap.empty) {
+        return snap.docs.map((doc) => serializeFirestoreDoc(doc.id, doc.data()));
+      }
     }
-    return {
-      id: doc.id,
-      ...rawData,
-    };
-  });
-  return data;
+  } catch (err) {
+    console.warn(`Admin retrieveDataByField failed for ${collectionName}:`, err);
+  }
+
+  try {
+    const q = query(
+      collection(firestore, collectionName),
+      where(field, "==", value)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => serializeFirestoreDoc(doc.id, doc.data()));
+  } catch (err) {
+    console.error(`Client retrieveDataByField failed for ${collectionName}:`, err);
+    return [];
+  }
 }
 
 export async function addData(
@@ -70,6 +140,15 @@ export async function addData(
     | LoginGooglePropsInterface
 ) {
   try {
+    if (db) {
+      const docRef = await db.collection(collectionName).add(data as any);
+      return {
+        status: true,
+        statusCode: 200,
+        message: "Data added successfully",
+        id: docRef.id,
+      };
+    }
     await addDoc(collection(firestore, collectionName), data);
     return {
       status: true,
@@ -90,6 +169,14 @@ export async function updateData(
   data: UpdateData<EventInterface | QrCodeInterface | PaymentStatusInterface>
 ) {
   try {
+    if (db) {
+      await db.collection(collectionName).doc(id).update(data as any);
+      return {
+        status: true,
+        statusCode: 200,
+        message: "Data updated successfully",
+      };
+    }
     await updateDoc(doc(firestore, collectionName, id), data);
     return {
       status: true,
@@ -106,6 +193,14 @@ export async function updateData(
 
 export async function deleteById(collectionName: string, id: string) {
   try {
+    if (db) {
+      await db.collection(collectionName).doc(id).delete();
+      return {
+        status: true,
+        statusCode: 200,
+        message: "Data deleted successfully",
+      };
+    }
     await deleteDoc(doc(firestore, collectionName, id));
     return {
       status: true,
@@ -169,10 +264,7 @@ export async function retrieveDataByFieldAdmin(
       return [];
     }
 
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    return snap.docs.map((doc) => serializeFirestoreDoc(doc.id, doc.data()));
   } catch (err: unknown) {
     if (err instanceof Error) {
       throw new Error(`Failed to retrieve data: ${err.message}`);
