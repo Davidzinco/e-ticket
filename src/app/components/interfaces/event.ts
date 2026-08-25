@@ -7,6 +7,8 @@ export interface TicketPackageInterface {
   id: string;
   name: string;
   price: number;
+  ticket?: number;
+  quota?: number;
   badge?: string;
   badgeBg?: string;
   badgeText?: string;

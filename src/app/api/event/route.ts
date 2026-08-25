@@ -81,8 +81,25 @@ export async function PUT(req: NextRequest) {
 
       const eventData = eventSnap.data()!;
       const newTicket = eventData.ticket + dataPayment.ticket;
+      const updates: { [key: string]: any } = { ticket: newTicket };
 
-      transaction.update(eventRef, { ticket: newTicket });
+      const packageId = (dataPayment as any).package_id;
+      if (packageId === "VIP" && eventData.ticket_vip !== undefined) {
+        updates.ticket_vip = eventData.ticket_vip + dataPayment.ticket;
+      } else if (packageId === "FESTIVAL" && eventData.ticket_festival !== undefined) {
+        updates.ticket_festival = eventData.ticket_festival + dataPayment.ticket;
+      }
+
+      if (Array.isArray(eventData.packages) && packageId) {
+        updates.packages = eventData.packages.map((pkg: any) => {
+          if (pkg.id === packageId && typeof pkg.ticket === "number") {
+            return { ...pkg, ticket: pkg.ticket + dataPayment.ticket };
+          }
+          return pkg;
+        });
+      }
+
+      transaction.update(eventRef, updates);
       transaction.delete(paymentDoc.ref);
     });
 

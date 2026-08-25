@@ -16,24 +16,55 @@ export default function BuyModal({
   mutate: () => void;
   event: EventInterface | undefined;
 }) {
-  // 1. Ambil opsi paket tiket dari Firebase jika tersedia (event.packages / event.ticket_types)
-  // Atau buat opsi default berbasis price_festival dan price_vip dari Firebase
+  // 1. Ambil harga dan stok tiket masing-masing paket dari Firebase
   const basePrice = event?.price && event.price > 0 ? event.price : 35000;
   const festivalPrice = event?.price_festival ?? event?.price ?? basePrice;
   const vipPrice =
     event?.price_vip ??
     (event?.price ? Math.round((event.price * 1.75) / 1000) * 1000 : 60000);
 
+  // Default quota kuota tiket per paket (bisa diset via ticket_festival & ticket_vip di Firestore)
+  const defaultTotalTickets = event?.ticket && event.ticket > 0 ? event.ticket : 50;
+  const festivalTickets =
+    event?.ticket_festival !== undefined
+      ? event.ticket_festival
+      : defaultTotalTickets;
+  const vipTickets =
+    event?.ticket_vip !== undefined
+      ? event.ticket_vip
+      : Math.min(15, Math.floor(defaultTotalTickets / 3));
+
   const availablePackages: TicketPackageInterface[] =
     event?.packages && event.packages.length > 0
-      ? event.packages
+      ? event.packages.map((pkg) => ({
+          ...pkg,
+          ticket:
+            pkg.ticket !== undefined
+              ? pkg.ticket
+              : pkg.quota !== undefined
+              ? pkg.quota
+              : pkg.id === "VIP"
+              ? vipTickets
+              : festivalTickets,
+        }))
       : event?.ticket_types && event.ticket_types.length > 0
-      ? event.ticket_types
+      ? event.ticket_types.map((pkg) => ({
+          ...pkg,
+          ticket:
+            pkg.ticket !== undefined
+              ? pkg.ticket
+              : pkg.quota !== undefined
+              ? pkg.quota
+              : pkg.id === "VIP"
+              ? vipTickets
+              : festivalTickets,
+        }))
       : [
           {
             id: "FESTIVAL",
             name: "FESTIVAL",
             price: festivalPrice,
+            ticket: festivalTickets,
             badge: "POPULER",
             badgeBg: "rgb(185, 239, 197)",
             badgeText: "rgb(42, 91, 59)",
@@ -43,6 +74,7 @@ export default function BuyModal({
             id: "VIP",
             name: "VIP",
             price: vipPrice,
+            ticket: vipTickets,
             badge: "PREMIUM",
             badgeBg: "rgb(254, 240, 138)",
             badgeText: "rgb(133, 77, 14)",
@@ -62,12 +94,33 @@ export default function BuyModal({
     availablePackages.find((p) => p.id === selectedPackageId) ||
     availablePackages[0];
 
+  const availableStock = selectedPackage?.ticket !== undefined ? selectedPackage.ticket : 999;
+  const isPackageSoldOut = availableStock <= 0;
   const activeTicketPrice = selectedPackage?.price || festivalPrice;
   const totalAmount = activeTicketPrice * ticketQuantity;
-  const maxTickets = event?.ticket && event.ticket > 0 ? event.ticket : 999;
+
+  const handleSelectPackage = (pkg: TicketPackageInterface) => {
+    setSelectedPackageId(pkg.id);
+    setIsUsernameErr({});
+    const pkgStock = pkg.ticket !== undefined ? pkg.ticket : 999;
+    if (pkgStock > 0 && ticketQuantity > pkgStock) {
+      setTicketQuantity(pkgStock);
+    } else if (pkgStock > 0 && ticketQuantity < 1) {
+      setTicketQuantity(1);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (isPackageSoldOut) {
+      return toast.error(`Tiket paket ${selectedPackage.name} sudah habis!`);
+    }
+
+    if (ticketQuantity > availableStock) {
+      return toast.error(`Maksimal pembelian untuk ${selectedPackage.name} adalah ${availableStock} tiket`);
+    }
+
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -116,6 +169,7 @@ export default function BuyModal({
         orderId,
         eventId: event?.id || "5W7jcnr28tGc5E8tywRl",
         productName: `${event?.title || "Bhima Night Carnival"} - ${selectedPackage.name}`,
+        packageId: selectedPackage.id,
         price: activeTicketPrice,
         quantity: ticketQuantity,
         email,
@@ -229,15 +283,14 @@ export default function BuyModal({
           <div className="grid grid-cols-1 gap-2.5">
             {availablePackages.map((pkg) => {
               const isSelected = selectedPackageId === pkg.id;
+              const stock = pkg.ticket !== undefined ? pkg.ticket : 0;
+              const isSoldOut = stock <= 0;
 
               return (
                 <button
                   key={pkg.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedPackageId(pkg.id);
-                    setIsUsernameErr({});
-                  }}
+                  onClick={() => handleSelectPackage(pkg)}
                   className={`w-full p-3.5 rounded-xl border text-left flex items-start justify-between gap-3 transition-all cursor-pointer ${
                     isSelected
                       ? "border-primary bg-primary-container/20 ring-2 ring-primary shadow-xs"
@@ -254,7 +307,7 @@ export default function BuyModal({
                     >
                       {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
-                    <div className="space-y-0.5 min-w-0">
+                    <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-extrabold text-sm text-on-surface">
                           {pkg.name}
@@ -276,6 +329,23 @@ export default function BuyModal({
                           {pkg.description}
                         </p>
                       )}
+                      {/* Sisa kuota tiket masing-masing paket */}
+                      <div className="pt-0.5">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                            isSoldOut
+                              ? "bg-red-100 text-red-700"
+                              : stock <= 5
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-surface-container text-primary"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[12px]">
+                            {isSoldOut ? "cancel" : "confirmation_number"}
+                          </span>
+                          {isSoldOut ? "Tiket Habis" : `Tersedia ${stock} tiket`}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -295,29 +365,33 @@ export default function BuyModal({
           </div>
         </div>
 
-        {/* Quantity Selector */}
+        {/* Quantity Selector (Dinamis sesuai kuota paket yang dipilih) */}
         <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
           <div>
             <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
             <span className="text-xs text-on-surface-variant">
-              {event?.ticket ? `Tersedia ${event.ticket} tiket` : "Pilih jumlah tiket"}
+              {isPackageSoldOut
+                ? `Tiket ${selectedPackage.name} telah habis`
+                : `Tersedia ${availableStock} tiket`}
             </span>
           </div>
           <div className="flex items-center border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
             <button
               type="button"
+              disabled={ticketQuantity <= 1 || isPackageSoldOut}
               onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
-              className="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-colors cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-sm">remove</span>
             </button>
             <span className="w-12 text-center font-bold text-sm text-on-surface">
-              {ticketQuantity}
+              {isPackageSoldOut ? 0 : ticketQuantity}
             </span>
             <button
               type="button"
-              onClick={() => setTicketQuantity(Math.min(maxTickets, ticketQuantity + 1))}
-              className="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-colors cursor-pointer"
+              disabled={ticketQuantity >= availableStock || isPackageSoldOut}
+              onClick={() => setTicketQuantity(Math.min(availableStock, ticketQuantity + 1))}
+              className="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-sm">add</span>
             </button>
@@ -330,7 +404,7 @@ export default function BuyModal({
             Daftar Nama Pengunjung ({ticketQuantity} Orang)
           </label>
           <div className="space-y-2.5">
-            {Array.from({ length: ticketQuantity }, (_, index) => (
+            {Array.from({ length: isPackageSoldOut ? 0 : ticketQuantity }, (_, index) => (
               <div key={index} className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant space-y-1.5">
                 <label
                   htmlFor={`name${index}`}
@@ -422,12 +496,20 @@ export default function BuyModal({
         <div className="pt-2 flex flex-col gap-2">
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isPackageSoldOut}
             className="w-full h-12 bg-primary text-on-primary rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:bg-surface-container-high disabled:text-on-surface-variant disabled:cursor-not-allowed"
-            style={!isLoading ? { backgroundColor: "rgb(56, 105, 72)" } : {}}
+            style={!isLoading && !isPackageSoldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}}
           >
-            <span>{isLoading ? "Menghubungkan Midtrans..." : "Bayar Sekarang via QRIS / Midtrans"}</span>
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <span>
+              {isLoading
+                ? "Menghubungkan Midtrans..."
+                : isPackageSoldOut
+                ? `Tiket ${selectedPackage.name} Habis`
+                : "Bayar Sekarang via QRIS / Midtrans"}
+            </span>
+            {!isPackageSoldOut && (
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            )}
           </button>
           <p className="text-[10px] text-center text-on-surface-variant flex items-center justify-center gap-1">
             <span className="material-symbols-outlined text-[12px]">shield</span>

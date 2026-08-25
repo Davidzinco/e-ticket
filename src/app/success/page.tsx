@@ -83,7 +83,7 @@ function SuccessContent() {
             setIsProcessing(false);
             setIsLoading(false);
 
-            // Requirement 9: Auto-save email & NIK to localStorage for /myticket
+            // Auto-save email & NIK to localStorage for /myticket
             if (typeof window !== "undefined") {
               const primaryEmail = data.order?.email || data.tickets[0]?.email;
               const primaryNik = data.order?.nik || data.tickets[0]?.nik;

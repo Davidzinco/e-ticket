@@ -74,27 +74,27 @@ export default function Content({
         <section className="mb-8">
           <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden ambient-shadow flex-shrink-0">
             {/* Banner Image & Badges */}
-            <div className="h-64 md:h-96 w-full relative bg-surface-container-low overflow-hidden">
+            <div className="w-full relative bg-surface-container-low overflow-hidden">
               <Image
                 alt={currentEvent?.title || "Bhima Night Carnival"}
-                className="w-full h-full object-cover"
+                className="w-full h-auto object-contain block"
                 src="/images/bnc_2025/bhima_night_carnival26.webp"
-                width={1200}
-                height={600}
+                width={1669}
+                height={848}
                 priority
               />
 
               {/* Date Badge */}
-              <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-2 rounded-xl flex flex-col items-center border border-outline-variant shadow-sm">
+              <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-2 rounded-xl flex flex-col items-center border border-outline-variant shadow-sm z-10">
                 <span className="font-bold text-xs text-primary uppercase tracking-wider">
-                  Dec
+                  Sep
                 </span>
                 <span className="text-xl font-extrabold text-on-surface leading-none">
                   5
                 </span>
               </div>
               {/* Category Chip */}
-              <div className="absolute top-4 left-4 bg-surface-container-highest/90 backdrop-blur-md text-on-surface px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <div className="absolute top-4 left-4 bg-surface-container-highest/90 backdrop-blur-md text-on-surface px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm z-10">
                 <span
                   className="material-symbols-outlined text-[16px]"
                   style={{ fontVariationSettings: "'FILL' 1" }}
@@ -142,7 +142,7 @@ export default function Content({
                             month: "long",
                             year: "numeric",
                           })
-                        : "Desember 5, 2026"}{" "}
+                        : "September 5, 2026"}{" "}
                       • 16:00 - Selesai
                     </p>
                   </div>
