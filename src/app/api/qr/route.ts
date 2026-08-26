@@ -6,6 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/libs/adminAuth";
+import { updateTicketScanInGoogleSheets } from "@/libs/googleSheets";
 
 export const dynamic = "force-dynamic";
 
@@ -134,6 +135,14 @@ export async function GET(req: NextRequest) {
         scanned_at: dateFormat,
         scanned_by: session?.user?.email || "Admin",
       });
+
+      // Sync scan status & time to Google Sheets in real-time
+      if (data.qr_code) {
+        updateTicketScanInGoogleSheets(data.qr_code, dateFormat, true).catch((err) =>
+          console.error("Async Google Sheets scan update error:", err)
+        );
+      }
+
       return NextResponse.json(
         { data, message: "Unscanned" },
         { status: 200 }
