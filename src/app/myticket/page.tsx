@@ -4,9 +4,9 @@ import Header from "../components/layouts/header/header";
 import BottomNav from "../components/layouts/bottomNav/bottomNav";
 import { QrCodeInterface } from "../components/interfaces/qrCode";
 import { toast } from "sonner";
-import QRCode from "qrcode";
 import { useSearchParams } from "next/navigation";
 import { Link } from "next-view-transitions";
+import TicketCard from "../components/ui/ticketCard";
 
 export default function MyTicketPage() {
   return (
@@ -25,27 +25,6 @@ function MyTicketContent() {
   const [isPendingOrder, setIsPendingOrder] = useState<boolean>(false);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [tickets, setTickets] = useState<QrCodeInterface[] | null>(null);
-  const [qrImages, setQrImages] = useState<{ [key: string]: string }>({});
-
-  const generateQRCodes = async (ticketList: QrCodeInterface[]) => {
-    const images: { [key: string]: string } = {};
-    for (const item of ticketList) {
-      try {
-        const url = await QRCode.toDataURL(item.qr_code, {
-          width: 320,
-          margin: 2,
-          color: {
-            dark: "#181d18",
-            light: "#ffffff",
-          },
-        });
-        images[item.id || item.qr_code] = url;
-      } catch (err) {
-        console.error("Failed to generate QR code image:", err);
-      }
-    }
-    setQrImages(images);
-  };
 
   const fetchTickets = async (userEmail: string, userNik: string) => {
     setIsLoading(true);
@@ -64,7 +43,6 @@ function MyTicketContent() {
 
       if (res.ok && data.success && Array.isArray(data.data) && data.data.length > 0) {
         setTickets(data.data);
-        await generateQRCodes(data.data);
         if (typeof window !== "undefined") {
           localStorage.setItem(
             "bnc_saved_ticket_auth",
@@ -142,18 +120,6 @@ function MyTicketContent() {
     setErrorMessage(null);
     setIsPendingOrder(false);
     toast.info("Anda telah keluar dari sesi tiket.");
-  };
-
-  const handleDownloadQr = (qrCodeStr: string, name: string) => {
-    const dataUrl = qrImages[qrCodeStr];
-    if (!dataUrl) return;
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `BNC2026-QR-${name.replace(/\s+/g, "_")}-${qrCodeStr}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    toast.success("QR Code berhasil diunduh!");
   };
 
   return (
@@ -364,152 +330,14 @@ function MyTicketContent() {
 
             {/* List of Tickets */}
             <div className="space-y-6">
-              {tickets.map((ticket, index) => {
-                const qrUrl = qrImages[ticket.id || ticket.qr_code];
-                const isScanned = ticket.isScanned;
-
-                return (
-                  <div
-                    key={ticket.id || ticket.qr_code || index}
-                    className="bg-surface rounded-2xl border border-outline-variant p-6 sm:p-8 ambient-shadow relative overflow-hidden text-left"
-                  >
-                    {/* Ticket Header & Status */}
-                    <div className="flex justify-between items-start border-b border-dashed border-outline-variant pb-4 mb-4">
-                      <div>
-                        <span
-                          className="text-[10px] font-bold uppercase tracking-wider block mb-1"
-                          style={{ color: "rgb(56, 105, 72)" }}
-                        >
-                          Official E-Ticket #{index + 1}
-                        </span>
-                        <h2 className="text-xl font-extrabold text-on-surface">
-                          {ticket.event_name || "Bhima Night Carnival 2026"}
-                        </h2>
-                        <p className="text-xs text-on-surface-variant mt-0.5">
-                          5 Desember 2026 • 16:00 WIB • SMAN 1 Madiun
-                        </p>
-                      </div>
-                      <div
-                        className="px-3 py-1 rounded-full text-xs font-extrabold flex items-center gap-1 shadow-xs"
-                        style={
-                          isScanned
-                            ? {
-                                color: "rgb(90, 90, 90)",
-                                backgroundColor: "rgb(230, 230, 230)",
-                              }
-                            : {
-                                color: "rgb(42, 91, 59)",
-                                backgroundColor: "rgb(185, 239, 197)",
-                              }
-                        }
-                      >
-                        <span className="material-symbols-outlined text-xs">
-                          {isScanned ? "check" : "verified"}
-                        </span>
-                        {isScanned ? "SUDAH DI-SCAN" : "VALID"}
-                      </div>
-                    </div>
-
-                    {/* Ticket Info Grid */}
-                    <div className="grid grid-cols-2 gap-4 text-xs mb-6 bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/60">
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">
-                          Nama Pemegang
-                        </span>
-                        <span className="font-bold text-sm text-on-surface">
-                          {ticket.name}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">
-                          NIK
-                        </span>
-                        <span className="font-mono font-bold text-on-surface">
-                          {ticket.nik || nik}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">
-                          Order ID
-                        </span>
-                        <span className="font-mono font-bold text-on-surface truncate block">
-                          #{ticket.order_id}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-on-surface-variant block uppercase tracking-wider font-semibold">
-                          Status Pembayaran
-                        </span>
-                        <span
-                          className="font-bold"
-                          style={{ color: "rgb(56, 105, 72)" }}
-                        >
-                          LUNAS
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Real QR Code Container */}
-                    <div className="flex flex-col items-center justify-center p-6 bg-surface-container-low rounded-xl border border-outline-variant text-center">
-                      {qrUrl ? (
-                        <div className="p-3 bg-white rounded-xl shadow-md border border-outline-variant">
-                          <img
-                            src={qrUrl}
-                            alt={`QR Code ${ticket.qr_code}`}
-                            className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-48 h-48 bg-white flex items-center justify-center rounded-xl animate-pulse">
-                          <span className="text-xs text-gray-400">
-                            Membuat QR Code...
-                          </span>
-                        </div>
-                      )}
-
-                      <span className="font-mono text-xs text-on-surface font-extrabold mt-3 tracking-widest bg-surface px-3 py-1 rounded-lg border border-outline-variant">
-                        {ticket.qr_code}
-                      </span>
-                      <p className="text-[11px] text-on-surface-variant mt-2 max-w-xs">
-                        Tunjukkan QR Code ini kepada panitia tiket di pintu
-                        masuk event.
-                      </p>
-                    </div>
-
-                    {/* Action Buttons for this ticket */}
-                    <div className="flex flex-col sm:flex-row gap-3 w-full pt-5">
-                      <button
-                        onClick={() =>
-                          handleDownloadQr(
-                            ticket.id || ticket.qr_code,
-                            ticket.name
-                          )
-                        }
-                        className="flex-1 py-2.5 px-4 bg-surface border border-outline-variant text-on-surface rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-surface-container transition-all cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-sm text-primary">
-                          download
-                        </span>
-                        Simpan Gambar QR
-                      </button>
-                      <button
-                        onClick={() => window.print()}
-                        className="flex-1 py-2.5 px-4 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-xs"
-                        style={{ backgroundColor: "rgb(56, 105, 72)" }}
-                      >
-                        <span className="material-symbols-outlined text-sm">
-                          print
-                        </span>
-                        Cetak / Download PDF
-                      </button>
-                    </div>
-
-                    {/* Perforated Side Notches */}
-                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background rounded-full border-r border-outline-variant"></div>
-                    <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background rounded-full border-l border-outline-variant"></div>
-                  </div>
-                );
-              })}
+              {tickets.map((ticket, index) => (
+                <TicketCard
+                  key={ticket.id || ticket.qr_code || index}
+                  ticket={ticket}
+                  index={index}
+                  totalTickets={tickets.length}
+                />
+              ))}
             </div>
           </div>
         )}

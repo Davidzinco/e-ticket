@@ -1,7 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ["sman1madiun.sch.id"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "sman1madiun.sch.id",
+      },
+      {
+        protocol: "https",
+        hostname: "*.b-cdn.net",
+      },
+    ],
   },
   serverExternalPackages: ["firebase-admin", "jose", "jwks-rsa"],
 };

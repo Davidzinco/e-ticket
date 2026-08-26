@@ -2,13 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import Midtrans from "midtrans-client";
 import validator from "validator";
 import { db } from "@/libs/firebase/admin";
+import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
+import { sendBuyerToGoogleSheets } from "@/libs/googleSheets";
+
+const ALPHABET: string = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function generateCode(length: number = 20): string {
+  let result: string = "";
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  for (let i = 0; i < length; i++) {
+    result += ALPHABET[array[i] % ALPHABET.length];
+  }
+  return result;
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const serverKey = process.env.MIDTRANS_SERVER_KEY;
-    const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+    const serverKey = process.env.MIDTRANS_SERVER_KEY || "";
+    const clientKey = process.env.MIDTRANS_CLIENT_KEY || "";
 
-    if (!serverKey || !clientKey) {
+    const { orderId, eventId, productName, packageId, price, quantity, names, niks, email, bypassMidtrans } =
+      await req.json();
+
+    const isBypassMode =
+      bypassMidtrans === true ||
+      process.env.NEXT_PUBLIC_BYPASS_MIDTRANS === "true" ||
+      process.env.BYPASS_MIDTRANS === "true";
+
+    if (!isBypassMode && (!serverKey || !clientKey)) {
       return NextResponse.json(
         {
           message:
@@ -20,16 +41,15 @@ export async function POST(req: NextRequest) {
 
     const isProduction =
       process.env.MIDTRANS_IS_PRODUCTION === "true" ||
-      !serverKey.startsWith("SB-");
+      (serverKey ? !serverKey.startsWith("SB-") : false);
 
-    const snap = new Midtrans.Snap({
-      isProduction,
-      serverKey,
-      clientKey,
-    });
-
-    const { orderId, eventId, productName, packageId, price, quantity, names, niks, email } =
-      await req.json();
+    const snap = !isBypassMode && serverKey && clientKey
+      ? new Midtrans.Snap({
+          isProduction,
+          serverKey,
+          clientKey,
+        })
+      : null;
 
     const usernameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
     for (const name of names) {
@@ -136,6 +156,39 @@ export async function POST(req: NextRequest) {
 
       transaction.update(eventRef, updates);
 
+      if (isBypassMode) {
+        const qrDetails: QrCodeInterface[] = [];
+        const nowStr = new Date().toLocaleString("id-ID");
+        const trxId = `TRX-BYPASS-${Date.now()}`;
+
+        for (let i = 0; i < quantity; i++) {
+          const qrcode = generateCode();
+          const qrData: QrCodeInterface = {
+            qr_code: qrcode,
+            id_event: eventId,
+            name: trimmedNames[i] || trimmedNames[0],
+            nik: populatedNiks[i] || populatedNiks[0] || "-",
+            email,
+            isScanned: false,
+            transaction_id: trxId,
+            transaction_time: nowStr,
+            payment_type: "bypass_test",
+            ticket: quantity,
+            order_id: orderId,
+            event_name: productName,
+            scanned_at: "-",
+            action: "First Scan",
+            scanned_by: "-",
+          };
+          qrDetails.push(qrData);
+
+          const qrRef = db.collection("qr_detail").doc();
+          transaction.set(qrRef, qrData);
+        }
+
+        return { bypass: true, orderId, qrDetails };
+      }
+
       const parameter = {
         transaction_details: {
           order_id: orderId,
@@ -155,8 +208,6 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        const token = await snap.createTransaction(parameter);
-
         const paymentRef = db.collection("payment_status").doc(orderId);
         transaction.set(paymentRef, {
           status: "pending",
@@ -171,6 +222,11 @@ export async function POST(req: NextRequest) {
           createdAt: new Date(),
         });
 
+        if (!snap) {
+          throw new Error("Snap client is not initialized");
+        }
+
+        const token = await snap.createTransaction(parameter);
         return { token };
       } catch (err: unknown) {
         // Rollback stock
@@ -184,9 +240,18 @@ export async function POST(req: NextRequest) {
         ) {
           throw new Error("Invalid email");
         }
-        throw new Error("Midtrans transaction failed: pastikan Server Key Midtrans valid");
+        throw new Error(
+          err instanceof Error ? err.message : "Midtrans transaction failed: pastikan Server Key Midtrans valid"
+        );
       }
     });
+
+    if (result.bypass) {
+      if (result.qrDetails && result.qrDetails.length > 0) {
+        await sendBuyerToGoogleSheets(result.qrDetails);
+      }
+      return NextResponse.json({ bypass: true, orderId }, { status: 200 });
+    }
 
     return NextResponse.json(result, { status: 200 });
   } catch (err: unknown) {

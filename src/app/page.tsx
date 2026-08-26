@@ -14,7 +14,15 @@ export default async function HomePage() {
         slug={"5W7jcnr28tGc5E8tywRl"}
       />
     );
-  } catch {
-    return <Bnc2025View detailEvent={null} hasError={true} slug={null} />;
+  } catch (err) {
+    console.error("HomePage load error:", err);
+    const fallbackEvent = await FetchDetailEvent("5W7jcnr28tGc5E8tywRl");
+    return (
+      <Bnc2025View
+        detailEvent={fallbackEvent}
+        hasError={false}
+        slug={"5W7jcnr28tGc5E8tywRl"}
+      />
+    );
   }
 }

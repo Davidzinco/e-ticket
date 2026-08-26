@@ -6,6 +6,7 @@ import toDate from "@/app/components/utils/toDate";
 import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
 import { db } from "@/libs/firebase/admin";
 import { PaymentStatusInterface } from "@/app/components/interfaces/paymentStatus";
+import { sendBuyerToGoogleSheets } from "@/libs/googleSheets";
 
 const ALPHABET: string = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function generateCode(length: number = 20): string {
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
             transaction.set(qrRef, qrData);
           });
           dataPaymentResult = dataPayment;
-          return { dataPayment, eventData, status: true };
+          return { dataPayment, eventData, qrDetails, status: true };
         } catch {
           await transporter.sendMail({
             from: process.env.DEFAULT_EMAIL_USER_ADMIN,
@@ -179,7 +180,15 @@ export async function POST(req: NextRequest) {
       });
 
       try {
-        const { dataPayment, eventData } = result;
+        const { dataPayment, eventData, qrDetails } = result;
+
+        // Async sync to Google Sheets (non-blocking)
+        if (qrDetails && qrDetails.length > 0) {
+          sendBuyerToGoogleSheets(qrDetails).catch((err) =>
+            console.error("Async Google Sheets sync failed:", err)
+          );
+        }
+
         const qrImages: string[] = [];
 
         for (const code of qrCodes) {
