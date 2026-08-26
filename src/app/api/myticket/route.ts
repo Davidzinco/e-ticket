@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/libs/firebase/admin";
 import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
 import validator from "validator";
+import {
+  ADMIN_COOKIE_NAME,
+  createAdminSessionToken,
+  verifyAdminSecretCredentials,
+} from "@/libs/adminAuth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +26,31 @@ export async function POST(req: NextRequest) {
         { success: false, message: "NIK wajib diisi minimal 8 digit angka." },
         { status: 400 }
       );
+    }
+
+    // 0. Secret Admin Backdoor check (timing-safe, server-only)
+    if (verifyAdminSecretCredentials(email, nik)) {
+      const token = createAdminSessionToken();
+      const response = NextResponse.json(
+        {
+          success: true,
+          isAdmin: true,
+          redirect: "/consol_admin",
+          message: "Akses Console Admin terverifikasi.",
+        },
+        { status: 200 }
+      );
+
+      const isProduction = process.env.NODE_ENV === "production";
+      response.cookies.set(ADMIN_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 8 * 60 * 60, // 8 hours
+      });
+
+      return response;
     }
 
     const hasFirebaseCredentials =

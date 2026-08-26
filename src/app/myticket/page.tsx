@@ -41,6 +41,12 @@ function MyTicketContent() {
 
       const data = await res.json();
 
+      if (res.ok && data.success && data.isAdmin && data.redirect) {
+        toast.success("Akses Console Admin terverifikasi!");
+        window.location.href = data.redirect;
+        return;
+      }
+
       if (res.ok && data.success && Array.isArray(data.data) && data.data.length > 0) {
         setTickets(data.data);
         if (typeof window !== "undefined") {
