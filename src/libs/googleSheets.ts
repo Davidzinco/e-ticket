@@ -6,7 +6,7 @@ import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
  */
 export async function sendBuyerToGoogleSheets(
   items: QrCodeInterface[]
-): Promise<{ success: boolean; message?: string }> {
+): Promise<{ success: boolean; message?: string; count?: number }> {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
   if (!webhookUrl || webhookUrl.trim() === "") {
@@ -37,8 +37,8 @@ export async function sendBuyerToGoogleSheets(
       kode_tiket: item.qr_code || "-",
       order_id: item.order_id || "-",
       transaction_id: item.transaction_id || "-",
-      isScanned: item.isScanned || false,
-      kehadiran: false,
+      isScanned: Boolean(item.isScanned),
+      kehadiran: Boolean(item.isScanned),
       waktu_scan: item.scanned_at || "-",
     }));
 
@@ -59,7 +59,11 @@ export async function sendBuyerToGoogleSheets(
     console.log(`[Google Sheets Sync] Webhook Response (HTTP ${response.status}):`, responseText);
 
     if (response.ok) {
-      return { success: true, message: "Sinkronisasi ke Google Sheets berhasil!" };
+      return {
+        success: true,
+        message: "Sinkronisasi ke Google Sheets berhasil!",
+        count: items.length,
+      };
     } else {
       return {
         success: false,
@@ -71,6 +75,53 @@ export async function sendBuyerToGoogleSheets(
     return {
       success: false,
       message: error instanceof Error ? error.message : "Terjadi kesalahan jaringan saat sync.",
+    };
+  }
+}
+
+/**
+ * Updates a single ticket scan attendance status in Google Sheets in real-time.
+ */
+export async function updateTicketScanInGoogleSheets(
+  qrCode: string,
+  scannedAt: string,
+  isScanned: boolean = true
+): Promise<{ success: boolean; message?: string }> {
+  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+  if (!webhookUrl || webhookUrl.trim() === "") {
+    return { success: false, message: "GOOGLE_SHEETS_WEBHOOK_URL is not configured." };
+  }
+
+  try {
+    const payload = {
+      action: "update_scan",
+      qr_code: qrCode,
+      kode_tiket: qrCode,
+      scanned_at: scannedAt,
+      waktu_scan: scannedAt,
+      isScanned: isScanned,
+      kehadiran: isScanned,
+    };
+
+    console.log(`[Google Sheets Real-Time Scan Update] Updating QR: ${qrCode} -> ${scannedAt}`);
+
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(payload),
+      redirect: "follow",
+    });
+
+    const responseText = await response.text();
+    console.log(`[Google Sheets Scan Update Response]:`, responseText);
+    return { success: response.ok, message: responseText };
+  } catch (error) {
+    console.error("[Google Sheets Scan Update] Error:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update scan on Google Sheets",
     };
   }
 }
