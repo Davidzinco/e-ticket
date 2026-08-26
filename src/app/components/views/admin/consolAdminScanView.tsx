@@ -131,9 +131,19 @@ export default function ConsolAdminScanView() {
 
     try {
       setIsScanning(true);
+      // Perfect 1:1 square qrbox calculation
+      const qrboxSize = (viewfinderWidth: number, viewfinderHeight: number) => {
+        const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
+        return { width: edge, height: edge };
+      };
+
       await qrRef.current.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 15,
+          qrbox: qrboxSize,
+          aspectRatio: 1.0,
+        },
         async (decodedText) => {
           // Debounce / pause scanner briefly to avoid double reads
           if (qrRef.current && qrRef.current.isScanning) {
@@ -194,6 +204,40 @@ export default function ConsolAdminScanView() {
 
   return (
     <div className="space-y-6">
+      {/* Dynamic inline styles for 1:1 camera feed and square viewfinder */}
+      <style jsx global>{`
+        #reader {
+          width: 100% !important;
+          height: 100% !important;
+          border: none !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          background-color: #09090b !important;
+        }
+        #reader video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          border-radius: 1rem !important;
+        }
+        #reader__scan_region {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          aspect-ratio: 1 / 1 !important;
+        }
+        #reader__scan_region svg {
+          aspect-ratio: 1 / 1 !important;
+        }
+        #reader__dashboard_section {
+          display: none !important;
+        }
+        #reader img {
+          display: none !important;
+        }
+      `}</style>
+
       {/* Top Banner / Status Indicator */}
       {scanStatus !== "idle" && (
         <div
@@ -220,7 +264,7 @@ export default function ConsolAdminScanView() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Col: Camera & Controls */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow space-y-4">
+          <div className="bg-surface rounded-2xl border border-outline-variant p-4 sm:p-5 ambient-shadow space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-sm text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary" style={{ color: "rgb(56, 105, 72)" }}>
@@ -239,8 +283,8 @@ export default function ConsolAdminScanView() {
               </span>
             </div>
 
-            {/* Video Viewport */}
-            <div className="w-full aspect-[4/3] bg-zinc-900 rounded-2xl overflow-hidden relative border border-outline-variant flex items-center justify-center">
+            {/* Video Viewport: Strictly 1:1 Aspect Ratio on Mobile & Desktop */}
+            <div className="w-full max-w-[340px] sm:max-w-[380px] aspect-square mx-auto bg-zinc-950 rounded-2xl overflow-hidden relative border border-outline-variant flex items-center justify-center shadow-inner">
               <div id="reader" ref={readerRef} className="w-full h-full"></div>
               {!isScanning && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 p-4 text-center bg-zinc-900/90 space-y-2">
@@ -272,7 +316,7 @@ export default function ConsolAdminScanView() {
           </div>
 
           {/* Manual Code Input */}
-          <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow space-y-3">
+          <div className="bg-surface rounded-2xl border border-outline-variant p-4 sm:p-5 ambient-shadow space-y-3">
             <h4 className="font-extrabold text-xs text-on-surface">Input Manual Kode Tiket</h4>
             <form onSubmit={handleManualSubmit} className="flex gap-2">
               <input
@@ -285,7 +329,7 @@ export default function ConsolAdminScanView() {
               <button
                 type="submit"
                 disabled={isProcessing || !manualCode.trim()}
-                className="py-2.5 px-4 rounded-xl text-on-primary font-bold text-xs shadow-sm hover:opacity-90 disabled:opacity-50"
+                className="py-2.5 px-4 rounded-xl text-on-primary font-bold text-xs shadow-sm hover:opacity-90 disabled:opacity-50 cursor-pointer"
                 style={{ backgroundColor: "rgb(56, 105, 72)" }}
               >
                 Cek
@@ -297,7 +341,7 @@ export default function ConsolAdminScanView() {
         {/* Right Col: Ticket Details & History */}
         <div className="lg:col-span-6 space-y-4">
           {/* Ticket Information Card */}
-          <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow space-y-4">
+          <div className="bg-surface rounded-2xl border border-outline-variant p-4 sm:p-5 ambient-shadow space-y-4">
             <h3 className="font-extrabold text-sm text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-primary" style={{ color: "rgb(56, 105, 72)" }}>
                 badge
@@ -344,7 +388,7 @@ export default function ConsolAdminScanView() {
           </div>
 
           {/* Scan Log History */}
-          <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow space-y-3">
+          <div className="bg-surface rounded-2xl border border-outline-variant p-4 sm:p-5 ambient-shadow space-y-3">
             <h3 className="font-extrabold text-xs text-on-surface">Riwayat Scan Terakhir Sesi Ini</h3>
             {scanHistory.length > 0 ? (
               <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
