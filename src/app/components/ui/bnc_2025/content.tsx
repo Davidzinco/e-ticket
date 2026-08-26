@@ -72,20 +72,32 @@ export default function Content({
       <main className="pt-20 px-4 sm:px-6 max-w-[1200px] mx-auto pb-36 font-sans text-on-surface">
         {/* Hero Section */}
         <section className="mb-8">
-          <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden ambient-shadow flex-shrink-0">
+          <div className="w-full bg-white border border-outline-variant/60 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
             {/* Banner Image & Badges */}
-            <div className="w-full relative bg-surface-container-low overflow-hidden">
+            <div className="w-full relative overflow-hidden flex items-center justify-center py-4 px-4 sm:py-6 md:py-8 min-h-[180px] sm:min-h-[220px] md:min-h-[260px] border-b border-outline-variant/60">
+              {/* Background Image */}
               <Image
-                alt={currentEvent?.title || "Bhima Night Carnival"}
-                className="w-full h-auto object-contain block"
-                src="/images/bnc_2025/bhima_night_carnival26.webp"
-                width={1669}
-                height={848}
+                alt="Background"
+                src="/images/bnc_2025/IMG_3975.webp"
+                fill
                 priority
+                className="object-cover object-center pointer-events-none"
               />
+              
+              {/* Foreground Logo */}
+              <div className="relative z-10 w-full flex items-center justify-center">
+                <Image
+                  alt={currentEvent?.title || "Bhima Night Carnival"}
+                  className="w-auto h-auto max-h-[140px] sm:max-h-[180px] md:max-h-[220px] max-w-[90%] sm:max-w-[80%] md:max-w-[65%] object-contain drop-shadow-2xl block transition-transform duration-300 hover:scale-[1.02]"
+                  src="/images/bnc_2025/bhima_night_carnival26.webp"
+                  width={1669}
+                  height={848}
+                  priority
+                />
+              </div>
 
               {/* Date Badge */}
-              <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-2 rounded-xl flex flex-col items-center border border-outline-variant shadow-sm z-10">
+              <div className="absolute bottom-4 left-4 bg-surface/90 backdrop-blur-md px-3 py-2 rounded-xl flex flex-col items-center border border-outline-variant shadow-sm z-20">
                 <span className="font-bold text-xs text-primary uppercase tracking-wider">
                   Sep
                 </span>
@@ -94,7 +106,7 @@ export default function Content({
                 </span>
               </div>
               {/* Category Chip */}
-              <div className="absolute top-4 left-4 bg-surface-container-highest/90 backdrop-blur-md text-on-surface px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm z-10">
+              <div className="absolute top-4 left-4 bg-surface-container-highest/90 backdrop-blur-md text-on-surface px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm z-20">
                 <span
                   className="material-symbols-outlined text-[16px]"
                   style={{ fontVariationSettings: "'FILL' 1" }}
@@ -106,7 +118,7 @@ export default function Content({
             </div>
 
             {/* Content Details */}
-            <div className="p-6 md:p-8">
+            <div className="p-6 md:p-8 bg-white">
               <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-secondary-container text-on-secondary-container rounded-md mb-3">
                 <span className="material-symbols-outlined text-[14px]">
                   festival

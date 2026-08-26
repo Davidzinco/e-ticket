@@ -2,6 +2,7 @@ import { EventInterface } from "@/app/components/interfaces/event";
 import Header from "@/app/components/layouts/header/header";
 import BottomNav from "@/app/components/layouts/bottomNav/bottomNav";
 import Content from "@/app/components/ui/bnc_2025/content";
+import Image from "next/image";
 
 export default function Bnc2025View({
   detailEvent,
@@ -14,8 +15,20 @@ export default function Bnc2025View({
 }) {
   if (hasError || !detailEvent) {
     return (
-      <div className="bg-background min-h-screen flex flex-col justify-center items-center px-6 text-center text-on-background">
-        <div className="max-w-md p-8 rounded-2xl bg-surface border border-outline-variant shadow-lg">
+      <div className="min-h-screen relative flex flex-col justify-center items-center px-6 text-center text-on-background">
+        {/* Background Image WebP */}
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <Image
+            src="/images/bnc_2025/IMG_3975.webp"
+            alt="Background"
+            fill
+            priority
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        </div>
+
+        <div className="max-w-md p-8 rounded-2xl bg-surface/90 backdrop-blur-md border border-outline-variant shadow-lg">
           <h2 className="font-bold text-lg text-on-surface mb-2">Gagal Memuat Acara</h2>
           <p className="text-on-surface-variant text-xs mb-6">
             Terjadi kendala saat menghubungkan ke sistem tiket.
@@ -33,12 +46,25 @@ export default function Bnc2025View({
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
+    <div className="min-h-screen relative text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
+      {/* 🖼️ Background Image WebP di Belakang Seluruh Halaman */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <Image
+          src="/images/bnc_2025/IMG_3975.webp"
+          alt="Background"
+          fill
+          priority
+          className="object-cover object-center"
+        />
+        {/* Overlay lembut agar elemen teks dan kartu tetap kontras dan nyaman dibaca */}
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
+      </div>
+
       <Header title={detailEvent.title || "BNC"} currentView="info" />
       <div className="flex-grow pb-16">
         <Content detailEvent={detailEvent} slug={slug} />
       </div>
-      <footer className="py-6 text-center text-xs text-on-surface-variant border-t border-outline-variant bg-surface mb-16">
+      <footer className="py-6 text-center text-xs text-on-surface-variant border-t border-outline-variant bg-surface/80 backdrop-blur-md mb-16">
         <p className="font-bold text-on-surface">
           © 2026 <span className="text-primary font-bold" style={{ color: "rgb(56, 105, 72)" }}>Bhima Night Carnival</span> • SMAN 1 Madiun
         </p>
