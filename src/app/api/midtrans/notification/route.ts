@@ -182,11 +182,13 @@ export async function POST(req: NextRequest) {
       try {
         const { dataPayment, eventData, qrDetails } = result;
 
-        // Async sync to Google Sheets (non-blocking)
+        // Sync to Google Sheets
         if (qrDetails && qrDetails.length > 0) {
-          sendBuyerToGoogleSheets(qrDetails).catch((err) =>
-            console.error("Async Google Sheets sync failed:", err)
-          );
+          try {
+            await sendBuyerToGoogleSheets(qrDetails);
+          } catch (err) {
+            console.error("Google Sheets sync failed:", err);
+          }
         }
 
         const qrImages: string[] = [];
