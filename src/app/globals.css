@@ -267,3 +267,11 @@
 .ambient-shadow {
   box-shadow: 0 4px 12px rgba(24, 29, 23, 0.06);
 }
+
+body {
+  background-image: url('/images/bnc_2025/nIMG_3975.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}

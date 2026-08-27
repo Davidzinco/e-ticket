@@ -287,7 +287,7 @@ function MyTicketContent() {
                 </p>
               </div>
               <Link
-                href="https://wa.me/+6289680575400"
+                href="https://wa.me/+6287885484818"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-surface text-on-surface border border-outline-variant rounded-xl text-xs font-bold hover:bg-surface-container transition-all flex items-center gap-1.5"
