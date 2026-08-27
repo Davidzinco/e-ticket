@@ -329,23 +329,17 @@ export default function BuyModal({
                           {pkg.description}
                         </p>
                       )}
-                      {/* Sisa kuota tiket masing-masing paket */}
-                      <div className="pt-0.5">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
-                            isSoldOut
-                              ? "bg-red-100 text-red-700"
-                              : stock <= 5
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-surface-container text-primary"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[12px]">
-                            {isSoldOut ? "cancel" : "confirmation_number"}
+                      {/* Tampilkan badge hanya jika tiket benar-benar habis */}
+                      {isSoldOut && (
+                        <div className="pt-0.5">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-100 text-red-700">
+                            <span className="material-symbols-outlined text-[12px]">
+                              cancel
+                            </span>
+                            Tiket Habis
                           </span>
-                          {isSoldOut ? "Tiket Habis" : `Tersedia ${stock} tiket`}
-                        </span>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -365,15 +359,15 @@ export default function BuyModal({
           </div>
         </div>
 
-        {/* Quantity Selector (Dinamis sesuai kuota paket yang dipilih) */}
+        {/* Quantity Selector */}
         <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
           <div>
             <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
-            <span className="text-xs text-on-surface-variant">
-              {isPackageSoldOut
-                ? `Tiket ${selectedPackage.name} telah habis`
-                : `Tersedia ${availableStock} tiket`}
-            </span>
+            {isPackageSoldOut && (
+              <span className="text-xs text-red-600 font-medium">
+                Tiket {selectedPackage.name} telah habis
+              </span>
+            )}
           </div>
           <div className="flex items-center border border-outline-variant rounded-xl overflow-hidden bg-surface-container-lowest">
             <button
