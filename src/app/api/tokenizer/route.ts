@@ -39,9 +39,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const midtransIsProductionEnv = process.env.MIDTRANS_IS_PRODUCTION;
     const isProduction =
-      process.env.MIDTRANS_IS_PRODUCTION === "true" ||
-      (serverKey ? !serverKey.startsWith("SB-") : false);
+      midtransIsProductionEnv !== undefined
+        ? midtransIsProductionEnv === "true"
+        : (serverKey ? !serverKey.startsWith("SB-") : false);
+
+    // === DEBUG: Midtrans Configuration Log ===
+    console.log("\n========================================");
+    console.log("🔧 MIDTRANS CONFIG DEBUG");
+    console.log("========================================");
+    console.log("Mode:", isBypassMode ? "⏭️  BYPASS (no Midtrans)" : isProduction ? "🔴 PRODUCTION" : "🟡 SANDBOX");
+    console.log("MIDTRANS_IS_PRODUCTION env:", process.env.MIDTRANS_IS_PRODUCTION || "(not set)");
+    console.log("Server Key:", serverKey ? `${serverKey.substring(0, 15)}...${serverKey.substring(serverKey.length - 4)}` : "❌ KOSONG");
+    console.log("Client Key:", clientKey ? `${clientKey.substring(0, 15)}...${clientKey.substring(clientKey.length - 4)}` : "❌ KOSONG");
+    console.log("Server Key starts with SB-:", serverKey.startsWith("SB-"));
+    console.log("Snap URL:", process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || "(not set)");
+    console.log("Bypass:", isBypassMode);
+    console.log("API Target:", isProduction ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com");
+    console.log("========================================\n");
 
     const snap = !isBypassMode && serverKey && clientKey
       ? new Midtrans.Snap({
@@ -231,6 +247,34 @@ export async function POST(req: NextRequest) {
       } catch (err: unknown) {
         // Rollback stock
         transaction.update(eventRef, eventData);
+
+        // === DEBUG: Detailed Midtrans Error Log ===
+        console.error("\n❌ ========================================");
+        console.error("❌ MIDTRANS API ERROR");
+        console.error("❌ ========================================");
+        if (typeof err === "object" && err !== null) {
+          const midErr = err as Record<string, unknown>;
+          console.error("HTTP Status Code:", midErr.httpStatusCode ?? "N/A");
+          console.error("API Response:", JSON.stringify(midErr.ApiResponse ?? "N/A", null, 2));
+          console.error("Error Message:", midErr.message ?? "N/A");
+          console.error("Raw Error Keys:", Object.keys(midErr).join(", "));
+        } else {
+          console.error("Error (non-object):", err);
+        }
+        console.error("Server Key used:", serverKey ? `${serverKey.substring(0, 15)}...${serverKey.substring(serverKey.length - 4)}` : "KOSONG");
+        console.error("Client Key used:", clientKey ? `${clientKey.substring(0, 15)}...${clientKey.substring(clientKey.length - 4)}` : "KOSONG");
+        console.error("isProduction:", isProduction);
+        console.error("API Target:", isProduction ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com");
+        console.error("❌ ========================================\n");
+
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "httpStatusCode" in err &&
+          (err as { httpStatusCode: number }).httpStatusCode === 401
+        ) {
+          throw new Error("Kunci Akses Midtrans (MIDTRANS_SERVER_KEY) tidak valid atau ditolak oleh Midtrans (Error 401 Unauthorized). Silakan periksa kembali Server Key & Client Key di dashboard.midtrans.com atau aktifkan NEXT_PUBLIC_BYPASS_MIDTRANS=true di .env untuk mode pengujian.");
+        }
         if (
           typeof err === "object" &&
           err !== null &&
@@ -238,10 +282,10 @@ export async function POST(req: NextRequest) {
           (err as { ApiResponse: { error_messages: string[] } }).ApiResponse
             .error_messages?.[0] === "customer_details.email format is invalid"
         ) {
-          throw new Error("Invalid email");
+          throw new Error("Format email tidak valid");
         }
         throw new Error(
-          err instanceof Error ? err.message : "Midtrans transaction failed: pastikan Server Key Midtrans valid"
+          err instanceof Error ? err.message : "Transaksi Midtrans gagal: pastikan Server Key Midtrans valid"
         );
       }
     });
