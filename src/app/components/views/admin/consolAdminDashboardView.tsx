@@ -132,7 +132,10 @@ export default function ConsolAdminDashboardView() {
           </div>
           <div className="mt-4">
             <h3 className="text-2xl sm:text-3xl font-extrabold text-on-surface">
-              {isLoading ? "..." : stats?.eventStock?.totalStock ?? 1698}
+              {isLoading
+                ? "..."
+                : (Number(stats?.eventStock?.vipStock ?? 0) +
+                   Number(stats?.eventStock?.festivalStock ?? 0))}
             </h3>
             <p className="text-[11px] text-on-surface-variant mt-1">
               VIP: {stats?.eventStock?.vipStock ?? "-"} • Fest: {stats?.eventStock?.festivalStock ?? "-"}
