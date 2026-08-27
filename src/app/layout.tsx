@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import Providers from "./components/layouts/Providers/Providers";
 import { authOptions } from "@/libs/auth/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -45,6 +46,7 @@ export default async function RootLayout({
           <Providers session={session}>
             <PageWrapper>{children}</PageWrapper>
           </Providers>
+          <Analytics />
         </body>
       </html>
     </ViewTransitions>
