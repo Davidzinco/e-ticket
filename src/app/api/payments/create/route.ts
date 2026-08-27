@@ -209,12 +209,19 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Call DOKU Checkout API (Performed OUTSIDE Firestore transaction)
-    const baseUrl =
-      process.env.DOKU_RETURN_URL ||
-      process.env.NEXT_PUBLIC_NEXTAUTH_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
-    const callbackUrl = `${baseUrl.replace(/\/+$/, "")}/success?order_id=${orderId}`;
+    const returnUrlEnv = process.env.DOKU_RETURN_URL;
+    let callbackUrl = "";
+    if (returnUrlEnv && returnUrlEnv.trim() !== "") {
+      const cleanUrl = returnUrlEnv.trim().replace(/\/+$/, "");
+      callbackUrl = cleanUrl.endsWith("/success")
+        ? `${cleanUrl}?order_id=${encodeURIComponent(orderId)}`
+        : `${cleanUrl}/success?order_id=${encodeURIComponent(orderId)}`;
+    } else {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_NEXTAUTH_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+      callbackUrl = `${baseUrl.replace(/\/+$/, "")}/success?order_id=${encodeURIComponent(orderId)}`;
+    }
 
     try {
       const dokuResult = await createCheckoutTransaction({

@@ -56,13 +56,14 @@ export async function createCheckoutTransaction(params: {
   const url = `${config.baseUrl}${targetPath}`;
   
   const requestId = crypto.randomUUID();
-  const timestamp = new Date().toISOString();
+  const timestamp = new Date().toISOString().slice(0, 19) + "Z";
   
   const body = {
     order: {
       invoice_number: params.invoiceNumber,
       amount: params.amount,
       callback_url: params.callbackUrl,
+      auto_redirect: true,
     },
     payment: {
       payment_due_date: 60,
