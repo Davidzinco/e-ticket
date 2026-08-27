@@ -19,24 +19,6 @@ export default function Content({
   const [isSoldOut, setIsSoldOut] = useState<boolean>(false);
   const [openBuyModal, setOpenBuyModal] = useState<boolean>(false);
 
-  useEffect(() => {
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
-    const isProdKey = clientKey && !clientKey.startsWith("SB-");
-    const defaultSnapUrl = isProdKey
-      ? "https://app.midtrans.com/snap/snap.js"
-      : "https://app.sandbox.midtrans.com/snap/snap.js";
-
-    const snapScript =
-      process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || defaultSnapUrl;
-
-    if (snapScript && !document.querySelector(`script[src="${snapScript}"]`)) {
-      const script = document.createElement("script");
-      script.src = snapScript;
-      if (clientKey) script.setAttribute("data-client-key", clientKey);
-      script.async = true;
-      document.body.appendChild(script);
-    }
-  }, []);
 
   useEffect(() => {
     if (!detailEvent) return;
