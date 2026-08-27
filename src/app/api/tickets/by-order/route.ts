@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/libs/firebase/admin";
 import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
+import { isSuccessStatus, isPendingStatus, isFailedStatus } from "@/libs/payments/status";
 
 function serializeDate(val: unknown): string {
   if (!val) return new Date().toISOString();
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
           isScanned: false,
           transaction_id: `TRX-${orderId}`,
           transaction_time: new Date().toISOString(),
-          payment_type: "qris",
+          payment_type: "doku_checkout",
           ticket: 1,
           order_id: orderId,
           scanned_at: "-",
@@ -59,15 +60,15 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        status: "settlement",
+        status: "paid",
         order: {
           order_id: orderId,
-          status: "settlement",
+          status: "paid",
           email: "pengguna@gmail.com",
           nik: "3519012345670001",
           transaction_id: `TRX-${orderId}`,
           transaction_time: new Date().toISOString(),
-          payment_type: "qris",
+          payment_type: "doku_checkout",
         },
         tickets: mockTickets,
       });
@@ -106,10 +107,10 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        status: "settlement",
+        status: "paid",
         order: {
           order_id: orderId,
-          status: "settlement",
+          status: "paid",
           email: primary.email,
           nik: primary.nik,
           transaction_id: primary.transaction_id,
@@ -121,26 +122,39 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. If qr_detail doesn't have documents yet, check payment_status collection
-    const paymentDoc = await db.collection("payment_status").doc(orderId).get();
+    let paymentDoc = await db.collection("payment_status").doc(orderId).get();
+    let pData = paymentDoc.exists ? paymentDoc.data() : null;
 
-    if (paymentDoc.exists) {
-      const pData = paymentDoc.data()!;
+    if (!pData) {
+      // Also try querying payment_status by order_id field
+      const paymentSnapQuery = await db
+        .collection("payment_status")
+        .where("order_id", "==", orderId)
+        .limit(1)
+        .get();
+
+      if (!paymentSnapQuery.empty) {
+        pData = paymentSnapQuery.docs[0].data();
+      }
+    }
+
+    if (pData) {
       const pStatus = (pData.status || "pending").toLowerCase();
       const pEmail = pData.email || "";
       const pNik = Array.isArray(pData.nik)
         ? pData.nik[0]
         : String(pData.nik || "-");
 
-      if (pStatus === "settlement" || pStatus === "capture") {
-        // Payment is settled, but webhook is still building qr_detail tickets
+      if (isSuccessStatus(pStatus)) {
+        // Payment is paid/settled, but webhook is still building qr_detail tickets
         return NextResponse.json({
           success: true,
-          status: pStatus,
+          status: "paid",
           isTicketsProcessing: true,
           message: "Pembayaran telah berhasil, tiket Anda sedang diproses oleh sistem.",
           order: {
             order_id: orderId,
-            status: pStatus,
+            status: "paid",
             email: pEmail,
             nik: pNik,
             transaction_id: pData.transaction_id || "-",
@@ -151,7 +165,7 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      if (pStatus === "pending") {
+      if (isPendingStatus(pStatus)) {
         return NextResponse.json({
           success: false,
           status: "pending",
@@ -170,57 +184,6 @@ export async function GET(req: NextRequest) {
       }
 
       // Expire, cancel, deny, or failed
-      return NextResponse.json({
-        success: false,
-        status: pStatus,
-        message: `Transaksi pembayaran berstatus '${pStatus.toUpperCase()}'.`,
-        order: {
-          order_id: orderId,
-          status: pStatus,
-          email: pEmail,
-          nik: pNik,
-          transaction_id: "-",
-          transaction_time: serializeDate(pData.createdAt),
-          payment_type: "-",
-        },
-        tickets: [],
-      });
-    }
-
-    // Also try querying payment_status by order_id field
-    const paymentSnapQuery = await db
-      .collection("payment_status")
-      .where("order_id", "==", orderId)
-      .limit(1)
-      .get();
-
-    if (!paymentSnapQuery.empty) {
-      const pData = paymentSnapQuery.docs[0].data();
-      const pStatus = (pData.status || "pending").toLowerCase();
-      const pEmail = pData.email || "";
-      const pNik = Array.isArray(pData.nik)
-        ? pData.nik[0]
-        : String(pData.nik || "-");
-
-      if (pStatus === "settlement" || pStatus === "capture") {
-        return NextResponse.json({
-          success: true,
-          status: pStatus,
-          isTicketsProcessing: true,
-          message: "Pembayaran telah berhasil, tiket Anda sedang diproses oleh sistem.",
-          order: {
-            order_id: orderId,
-            status: pStatus,
-            email: pEmail,
-            nik: pNik,
-            transaction_id: pData.transaction_id || "-",
-            transaction_time: serializeDate(pData.createdAt),
-            payment_type: pData.payment_type || "-",
-          },
-          tickets: [],
-        });
-      }
-
       return NextResponse.json({
         success: false,
         status: pStatus,

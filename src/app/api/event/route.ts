@@ -1,5 +1,6 @@
 import { PaymentStatusInterface } from "@/app/components/interfaces/paymentStatus";
 import { db } from "@/libs/firebase/admin";
+import { releaseStock } from "@/libs/tickets/stock";
 import {
   retrieveData,
   retrieveDataByFieldAdmin,
@@ -70,37 +71,21 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const eventRef = db.collection("event").doc(dataPayment.event_id!);
+    if (dataPayment.stock_released) {
+      return NextResponse.json({ message: "Stock already released" }, { status: 200 });
+    }
 
-    await db.runTransaction(async (transaction) => {
-      const eventSnap = await transaction.get(eventRef);
+    await releaseStock(
+      order_id,
+      dataPayment.event_id,
+      dataPayment.package_id || "FESTIVAL",
+      dataPayment.ticket
+    );
 
-      if (!eventSnap.exists) {
-        throw new Error("Event not found");
-      }
-
-      const eventData = eventSnap.data()!;
-      const newTicket = eventData.ticket + dataPayment.ticket;
-      const updates: { [key: string]: any } = { ticket: newTicket };
-
-      const packageId = (dataPayment as any).package_id;
-      if (packageId === "VIP" && eventData.ticket_vip !== undefined) {
-        updates.ticket_vip = eventData.ticket_vip + dataPayment.ticket;
-      } else if (packageId === "FESTIVAL" && eventData.ticket_festival !== undefined) {
-        updates.ticket_festival = eventData.ticket_festival + dataPayment.ticket;
-      }
-
-      if (Array.isArray(eventData.packages) && packageId) {
-        updates.packages = eventData.packages.map((pkg: any) => {
-          if (pkg.id === packageId && typeof pkg.ticket === "number") {
-            return { ...pkg, ticket: pkg.ticket + dataPayment.ticket };
-          }
-          return pkg;
-        });
-      }
-
-      transaction.update(eventRef, updates);
-      transaction.delete(paymentDoc.ref);
+    await paymentDoc.ref.update({
+      status: "cancelled",
+      stock_released: true,
+      updatedAt: new Date(),
     });
 
     return NextResponse.json({ message: "Success" }, { status: 200 });

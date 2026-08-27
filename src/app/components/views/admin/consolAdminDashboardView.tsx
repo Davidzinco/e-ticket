@@ -198,7 +198,7 @@ export default function ConsolAdminDashboardView() {
               Riwayat Transaksi
             </h4>
             <p className="text-xs text-on-surface-variant mt-1">
-              Pantau status pemesanan Midtrans & riwayat transaksi masuk.
+              Pantau status pembayaran &amp; riwayat transaksi masuk.
             </p>
           </div>
         </Link>

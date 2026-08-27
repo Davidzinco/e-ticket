@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 import Modal from "../../common/modal";
 import { EventInterface, TicketPackageInterface } from "../../interfaces/event";
-import { v4 as uuidv4 } from "uuid";
 
 export default function BuyModal({
   onClose,
@@ -159,25 +158,21 @@ export default function BuyModal({
     }
 
     try {
-      const orderId = uuidv4().replace(/-/g, "").slice(0, 24);
       const names = Array.from(
         { length: ticketQuantity },
         (_, i) => (formData.get(`name${i}`) as string)?.trim()
       );
 
       const payload = {
-        orderId,
         eventId: event?.id || "5W7jcnr28tGc5E8tywRl",
-        productName: `${event?.title || "Bhima Night Carnival"} - ${selectedPackage.name}`,
         packageId: selectedPackage.id,
-        price: activeTicketPrice,
         quantity: ticketQuantity,
         email,
         names,
         niks: [primaryNik],
       };
 
-      const res = await fetch("/api/tokenizer", {
+      const res = await fetch("/api/payments/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -187,51 +182,22 @@ export default function BuyModal({
 
       const reqData = await res.json();
 
-      if (res.status !== 200) {
+      if (res.status !== 200 || !reqData.success) {
         toast.error(reqData.message || "Terjadi kesalahan saat memproses pesanan");
         return;
       }
 
       if (reqData.bypass) {
         toast.success("Bypass Pembayaran Berhasil (Mode Test / Simulasi)!");
-        window.location.href = `/success?order_id=${orderId}&transaction_status=settlement&status_code=200`;
+        window.location.href = `/success?order_id=${reqData.orderId}&status=paid`;
         return;
       }
 
-      if (window?.snap?.pay && reqData?.token?.token) {
-        window.snap.pay(reqData.token.token, {
-          onSuccess() {
-            toast.success("Pembayaran berhasil!");
-            window.location.href = `/success?order_id=${orderId}&transaction_status=settlement&status_code=200`;
-          },
-          onPending() {
-            toast.info("Menunggu pembayaran...");
-            window.location.href = `/success?order_id=${orderId}&transaction_status=pending&status_code=201`;
-          },
-          async onError() {
-            toast.error("Pembayaran gagal atau dibatalkan");
-            await handleFail(orderId);
-            mutate();
-          },
-          async onClose() {
-            toast.info("Popup pembayaran ditutup");
-            await handleFail(orderId);
-            mutate();
-          },
-        });
+      if (reqData.paymentUrl) {
+        toast.info("Mengarahkan ke halaman pembayaran DOKU...");
+        window.location.href = reqData.paymentUrl;
       } else {
-        toast.error("Midtrans Snap belum terhubung. Menggunakan mode Bypass Test...");
-        // Auto-fallback if Snap is not configured
-        const bypassRes = await fetch("/api/tokenizer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, bypassMidtrans: true }),
-        });
-        const bypassData = await bypassRes.json();
-        if (bypassData.bypass) {
-          toast.success("Bypass Pembayaran Berhasil (Mode Test)!");
-          window.location.href = `/success?order_id=${orderId}&transaction_status=settlement&status_code=200`;
-        }
+        toast.error("Gagal mendapatkan tautan pembayaran. Silakan coba lagi.");
       }
     } catch (error) {
       console.error("Order error:", error);
@@ -239,16 +205,6 @@ export default function BuyModal({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFail = async (order_id: string) => {
-    await fetch("/api/event", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ order_id }),
-    }).catch(() => {});
   };
 
   return (
@@ -496,10 +452,10 @@ export default function BuyModal({
           >
             <span>
               {isLoading
-                ? "Menghubungkan Midtrans..."
+                ? "Menghubungkan ke DOKU..."
                 : isPackageSoldOut
                 ? `Tiket ${selectedPackage.name} Habis`
-                : "Bayar Sekarang via QRIS / Midtrans"}
+                : "Bayar Sekarang via DOKU / QRIS"}
             </span>
             {!isPackageSoldOut && (
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -507,7 +463,7 @@ export default function BuyModal({
           </button>
           <p className="text-[10px] text-center text-on-surface-variant flex items-center justify-center gap-1">
             <span className="material-symbols-outlined text-[12px]">shield</span>
-            Pembayaran terenkripsi &amp; aman via Midtrans / QRIS
+            Pembayaran terenkripsi &amp; aman via DOKU Checkout / QRIS
           </p>
         </div>
       </form>

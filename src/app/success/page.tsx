@@ -151,10 +151,15 @@ function SuccessContent() {
   };
 
   const isSuccessStatus =
-    orderStatus === "settlement" || orderStatus === "capture" || urlStatus === "settlement";
+    orderStatus === "paid" ||
+    orderStatus === "settlement" ||
+    orderStatus === "capture" ||
+    urlStatus === "settlement" ||
+    urlStatus === "paid" ||
+    urlStatus === "bypass";
   const isPendingStatus = orderStatus === "pending" || urlStatus === "pending";
   const isFailedStatus =
-    orderStatus && ["expire", "cancel", "deny", "failed"].includes(orderStatus.toLowerCase());
+    orderStatus && ["expire", "cancel", "deny", "failed", "cancelled", "expired"].includes(orderStatus.toLowerCase());
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
