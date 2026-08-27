@@ -120,3 +120,79 @@ export async function createCheckoutTransaction(params: {
     throw error;
   }
 }
+
+export function generateGetSignature(
+  clientId: string,
+  requestId: string,
+  timestamp: string,
+  targetPath: string,
+  secretKey: string
+): string {
+  const canonicalString = [
+    `Client-Id:${clientId}`,
+    `Request-Id:${requestId}`,
+    `Request-Timestamp:${timestamp}`,
+    `Request-Target:${targetPath}`,
+  ].join("\n");
+
+  const hmac = crypto.createHmac("sha256", secretKey).update(canonicalString).digest("base64");
+  return `HMACSHA256=${hmac}`;
+}
+
+export async function checkDokuOrderStatus(invoiceNumber: string): Promise<{
+  success: boolean;
+  status: string;
+  data?: any;
+}> {
+  const config = getDokuConfig();
+  if (!config.clientId || !config.secretKey) {
+    return { success: false, status: "UNKNOWN" };
+  }
+
+  const targetPath = `/orders/v1/status/${encodeURIComponent(invoiceNumber)}`;
+  const url = `${config.baseUrl}${targetPath}`;
+  const requestId = crypto.randomUUID();
+  const timestamp = new Date().toISOString().slice(0, 19) + "Z";
+  const signature = generateGetSignature(
+    config.clientId,
+    requestId,
+    timestamp,
+    targetPath,
+    config.secretKey
+  );
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Client-Id": config.clientId,
+        "Request-Id": requestId,
+        "Request-Timestamp": timestamp,
+        "Request-Target": targetPath,
+        "Signature": signature,
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return { success: false, status: "UNKNOWN" };
+    }
+
+    const data = await response.json();
+    const transactionStatus =
+      data.transaction?.status ||
+      data.order?.status ||
+      data.status ||
+      "PENDING";
+
+    return {
+      success: true,
+      status: transactionStatus.toUpperCase(),
+      data,
+    };
+  } catch (error) {
+    console.error("DOKU Status Inquiry error:", error);
+    return { success: false, status: "UNKNOWN" };
+  }
+}
+

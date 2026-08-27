@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/libs/firebase/admin";
 import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
-import { isSuccessStatus, isPendingStatus, isFailedStatus } from "@/libs/payments/status";
+import { isSuccessStatus, isPendingStatus, isFailedStatus, mapDokuStatus } from "@/libs/payments/status";
+import { checkDokuOrderStatus } from "@/libs/payments/doku";
+import { issueTicketsForOrder } from "@/libs/tickets/issueTickets";
+import { releaseStock } from "@/libs/tickets/stock";
+import { sendTicketEmail } from "@/libs/email/ticketEmail";
 
 function serializeDate(val: unknown): string {
   if (!val) return new Date().toISOString();
@@ -36,7 +40,6 @@ export async function GET(req: NextRequest) {
       process.env.FIREBASE_PRIVATE_KEY;
 
     if (!hasFirebaseCredentials || !db) {
-      // Mock data for local testing / demo mode without Firebase Admin credentials
       const mockTickets: QrCodeInterface[] = [
         {
           id: `mock_ticket_${orderId}_1`,
@@ -122,11 +125,11 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. If qr_detail doesn't have documents yet, check payment_status collection
-    let paymentDoc = await db.collection("payment_status").doc(orderId).get();
+    let paymentDocRef = db.collection("payment_status").doc(orderId);
+    let paymentDoc = await paymentDocRef.get();
     let pData = paymentDoc.exists ? paymentDoc.data() : null;
 
     if (!pData) {
-      // Also try querying payment_status by order_id field
       const paymentSnapQuery = await db
         .collection("payment_status")
         .where("order_id", "==", orderId)
@@ -134,19 +137,115 @@ export async function GET(req: NextRequest) {
         .get();
 
       if (!paymentSnapQuery.empty) {
-        pData = paymentSnapQuery.docs[0].data();
+        paymentDoc = paymentSnapQuery.docs[0];
+        paymentDocRef = paymentDoc.ref;
+        pData = paymentDoc.data();
       }
     }
 
     if (pData) {
-      const pStatus = (pData.status || "pending").toLowerCase();
+      let pStatus = (pData.status || "pending").toLowerCase();
       const pEmail = pData.email || "";
       const pNik = Array.isArray(pData.nik)
         ? pData.nik[0]
         : String(pData.nik || "-");
 
+      // 3. If status is pending in Firestore, actively query DOKU API Status Inquiry
+      if (isPendingStatus(pStatus) && pData.provider !== "bypass_test") {
+        try {
+          const inquiry = await checkDokuOrderStatus(orderId);
+          if (inquiry.success && inquiry.status) {
+            const mappedStatus = mapDokuStatus(inquiry.status);
+
+            if (mappedStatus === "paid") {
+              const transactionId =
+                inquiry.data?.transaction?.id || `DOKU-${orderId}`;
+              const transactionTime =
+                inquiry.data?.transaction?.date || new Date().toISOString();
+              const paymentType =
+                inquiry.data?.channel?.id || "DOKU_CHECKOUT";
+
+              const qrDetails = await issueTicketsForOrder({
+                orderId,
+                eventId: pData.event_id,
+                eventName: pData.event_name,
+                names: pData.name,
+                niks: pData.nik || [pNik],
+                email: pData.email,
+                totalTickets: pData.ticket,
+                transactionId,
+                transactionTime,
+                paymentType,
+              });
+
+              await paymentDocRef.update({
+                status: "paid",
+                provider_status: inquiry.status,
+                transaction_id: transactionId,
+                transaction_time: transactionTime,
+                payment_type: paymentType,
+                paidAt: new Date(),
+                updatedAt: new Date(),
+                tickets_issued: true,
+                sheets_sync_status: "synced",
+              });
+
+              // Send email in background
+              try {
+                const eventSnap = await db.collection("event").doc(pData.event_id).get();
+                const eventData = eventSnap.exists ? eventSnap.data() : undefined;
+                const qrCodes = qrDetails.map((q) => q.qr_code);
+                await sendTicketEmail({
+                  email: pData.email,
+                  names: pData.name,
+                  eventName: pData.event_name,
+                  eventTimestamp: eventData?.timestamp,
+                  eventLocation: eventData?.location,
+                  eventImageSrc: eventData?.src,
+                  qrCodes,
+                });
+              } catch (e) {
+                console.error("Inquiry background email error:", e);
+              }
+
+              return NextResponse.json({
+                success: true,
+                status: "paid",
+                order: {
+                  order_id: orderId,
+                  status: "paid",
+                  email: pEmail,
+                  nik: pNik,
+                  transaction_id: transactionId,
+                  transaction_time: transactionTime,
+                  payment_type: paymentType,
+                },
+                tickets: qrDetails,
+              });
+            } else if (["failed", "expired", "cancelled"].includes(mappedStatus)) {
+              if (pData.stock_reserved && !pData.stock_released) {
+                await releaseStock(
+                  orderId,
+                  pData.event_id,
+                  pData.package_id || "FESTIVAL",
+                  pData.ticket
+                );
+                await paymentDocRef.update({
+                  status: mappedStatus,
+                  provider_status: inquiry.status,
+                  stock_released: true,
+                  updatedAt: new Date(),
+                });
+              }
+              pStatus = mappedStatus;
+            }
+          }
+        } catch (inquiryErr) {
+          console.error("Status inquiry failed in by-order route:", inquiryErr);
+        }
+      }
+
       if (isSuccessStatus(pStatus)) {
-        // Payment is paid/settled, but webhook is still building qr_detail tickets
         return NextResponse.json({
           success: true,
           status: "paid",
