@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 import QRCode from "qrcode";
+import path from "path";
+import fs from "fs";
 import toDate from "@/app/components/utils/toDate";
 
 export interface SendTicketEmailParams {
@@ -101,6 +103,26 @@ export async function sendTicketEmail(
     // Prepare binary Buffer attachments for high reliability CID rendering
     const attachments: any[] = [];
     const qrCidMap: string[] = [];
+
+    // Attach BNC official logo header
+    const logoCid = "bnc_header_logo";
+    let hasLogoAttachment = false;
+    try {
+      const logoPath = path.join(process.cwd(), "public", "images", "bnc_2025", "bhima_night_carnival26.webp");
+      if (fs.existsSync(logoPath)) {
+        const logoBuffer = fs.readFileSync(logoPath);
+        attachments.push({
+          filename: "bhima_night_carnival26.webp",
+          content: logoBuffer,
+          cid: logoCid,
+          contentType: "image/webp",
+          contentDisposition: "inline",
+        });
+        hasLogoAttachment = true;
+      }
+    } catch (e) {
+      console.warn("Could not attach local BNC logo:", e);
+    }
 
     for (let i = 0; i < qrCodes.length; i++) {
       const code = qrCodes[i];
@@ -281,8 +303,10 @@ export async function sendTicketEmail(
           <tr>
             <td align="center" style="padding-bottom: 24px;">
               ${
-                eventImageSrc && eventImageSrc.startsWith("http")
-                  ? `<img src="${eventImageSrc}" alt="BNC 2026 Banner" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />`
+                hasLogoAttachment
+                  ? `<div style="text-align: center; padding: 10px 0;">
+                      <img src="cid:${logoCid}" alt="Bhima Night Carnival 2026" width="340" style="display: block; margin: 0 auto; max-width: 340px; width: 100%; height: auto; object-fit: contain;" />
+                    </div>`
                   : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #1d3324 0%, #0d1710 100%); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
                       <tr>
                         <td style="padding: 28px 20px;">
