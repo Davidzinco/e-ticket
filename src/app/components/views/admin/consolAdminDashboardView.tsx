@@ -122,23 +122,20 @@ export default function ConsolAdminDashboardView() {
           </div>
         </div>
 
-        {/* Metric 4: Sisa Kuota Kupon */}
+        {/* Metric 4: Sisa Kuota Tiket */}
         <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-on-surface-variant">Sisa Kuota Kupon Total</span>
+            <span className="text-xs font-bold text-on-surface-variant">Sisa Kuota Total</span>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <span className="material-symbols-outlined text-xl">inventory_2</span>
             </div>
           </div>
           <div className="mt-4">
             <h3 className="text-2xl sm:text-3xl font-extrabold text-on-surface">
-              {isLoading
-                ? "..."
-                : (Number(stats?.eventStock?.vipStock ?? 0) +
-                   Number(stats?.eventStock?.festivalStock ?? 0))}
+              {isLoading ? "..." : (stats?.eventStock?.totalStock ?? 0)}
             </h3>
             <p className="text-[11px] text-on-surface-variant mt-1">
-              VIP: {stats?.eventStock?.vipStock ?? "-"} • Fest: {stats?.eventStock?.festivalStock ?? "-"}
+              Tiket TERSEDIA (field &apos;ticket&apos;)
             </p>
           </div>
         </div>

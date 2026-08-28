@@ -8,48 +8,13 @@ export async function reserveStock(
   packageId: string,
   quantity: number
 ): Promise<DocumentData> {
-  const totalStock = eventData.ticket || 0;
+  const totalStock = eventData.ticket ?? 0;
   if (totalStock < quantity) {
-    throw new Error("Stok tiket total tidak mencukupi");
+    throw new Error("Stok tiket tidak mencukupi");
   }
 
   const updatedData: { [key: string]: any } = { ...eventData };
   updatedData.ticket = totalStock - quantity;
-
-  const pkgUpper = (packageId || "").toUpperCase();
-
-  if (pkgUpper === "FESTIVAL" && eventData.ticket_festival !== undefined) {
-    if (eventData.ticket_festival < quantity) {
-      throw new Error("Stok tiket Festival tidak mencukupi");
-    }
-    updatedData.ticket_festival = eventData.ticket_festival - quantity;
-  } else if (pkgUpper === "VIP" && eventData.ticket_vip !== undefined) {
-    if (eventData.ticket_vip < quantity) {
-      throw new Error("Stok tiket VIP tidak mencukupi");
-    }
-    updatedData.ticket_vip = eventData.ticket_vip - quantity;
-  }
-
-  if (eventData.packages && Array.isArray(eventData.packages)) {
-    const pkgIndex = eventData.packages.findIndex(
-      (p: any) => (p.id || "").toUpperCase() === pkgUpper
-    );
-    if (pkgIndex !== -1) {
-      const currentPkgTicket = eventData.packages[pkgIndex].ticket ?? eventData.packages[pkgIndex].quota ?? 0;
-      if (currentPkgTicket < quantity) {
-        throw new Error(`Stok paket ${packageId} tidak mencukupi`);
-      }
-      updatedData.packages = eventData.packages.map((pkg: any, idx: number) => {
-        if (idx === pkgIndex) {
-          return {
-            ...pkg,
-            ticket: currentPkgTicket - quantity,
-          };
-        }
-        return pkg;
-      });
-    }
-  }
 
   transaction.update(eventRef, updatedData);
   return updatedData;
@@ -74,32 +39,7 @@ export async function releaseStock(
     const eventData = eventSnap.data() as DocumentData;
     const updatedData: { [key: string]: any } = { ...eventData };
 
-    updatedData.ticket = (eventData.ticket || 0) + quantity;
-
-    const pkgUpper = (packageId || "").toUpperCase();
-
-    if (pkgUpper === "FESTIVAL" && eventData.ticket_festival !== undefined) {
-      updatedData.ticket_festival = eventData.ticket_festival + quantity;
-    } else if (pkgUpper === "VIP" && eventData.ticket_vip !== undefined) {
-      updatedData.ticket_vip = eventData.ticket_vip + quantity;
-    }
-
-    if (eventData.packages && Array.isArray(eventData.packages)) {
-      const pkgIndex = eventData.packages.findIndex(
-        (p: any) => (p.id || "").toUpperCase() === pkgUpper
-      );
-      if (pkgIndex !== -1) {
-        updatedData.packages = eventData.packages.map((pkg: any, idx: number) => {
-          if (idx === pkgIndex) {
-            return {
-              ...pkg,
-              ticket: (pkg.ticket || 0) + quantity,
-            };
-          }
-          return pkg;
-        });
-      }
-    }
+    updatedData.ticket = (eventData.ticket ?? 0) + quantity;
 
     transaction.update(eventRef, updatedData);
   });

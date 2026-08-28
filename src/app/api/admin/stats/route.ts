@@ -92,19 +92,9 @@ export async function GET(req: NextRequest) {
         unscannedCount,
         pendingOrdersCount,
         recentTickets,
-        eventStock: eventData
-          ? {
-              totalStock:
-                Number(eventData.ticket_vip ?? 0) +
-                Number(eventData.ticket_festival ?? 0),
-              vipStock: Number(eventData.ticket_vip ?? 0),
-              festivalStock: Number(eventData.ticket_festival ?? 0),
-            }
-          : {
-              totalStock: 600,
-              vipStock: 100,
-              festivalStock: 500,
-            },
+        eventStock: {
+          totalStock: Number(eventData?.ticket ?? 0),
+        },
       },
     });
   } catch (error) {

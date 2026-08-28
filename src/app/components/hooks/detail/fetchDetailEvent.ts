@@ -12,11 +12,7 @@ const DEFAULT_EVENT_FALLBACK: EventInterface = {
   isSoldOut: false,
   timestamp: { seconds: 1788595200, nanoseconds: 0 },
   price: 56000,
-  price_festival: 56000,
-  price_vip: 140000,
   ticket: 1698,
-  ticket_festival: 500,
-  ticket_vip: 100,
 };
 
 export default async function FetchDetailEvent(id: string): Promise<EventInterface> {

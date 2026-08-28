@@ -15,75 +15,24 @@ export default function BuyModal({
   mutate: () => void;
   event: EventInterface | undefined;
 }) {
-  // 1. Ambil harga dan stok tiket masing-masing paket dari Firebase
-  const basePrice = event?.price && event.price > 0 ? event.price : 35000;
-  const festivalPrice = event?.price_festival ?? event?.price ?? basePrice;
-  const vipPrice =
-    event?.price_vip ??
-    (event?.price ? Math.round((event.price * 1.75) / 1000) * 1000 : 60000);
+  // Ambil harga dan stok tiket dari Firestore (field 'price' dan 'ticket')
+  const carnivalPrice = event?.price && event.price > 0 ? event.price : 56000;
+  const carnivalStock = event?.ticket !== undefined ? event.ticket : 0;
 
-  // Default quota kuota tiket per paket (bisa diset via ticket_festival & ticket_vip di Firestore)
-  const defaultTotalTickets = event?.ticket && event.ticket > 0 ? event.ticket : 50;
-  const festivalTickets =
-    event?.ticket_festival !== undefined
-      ? event.ticket_festival
-      : defaultTotalTickets;
-  const vipTickets =
-    event?.ticket_vip !== undefined
-      ? event.ticket_vip
-      : Math.min(15, Math.floor(defaultTotalTickets / 3));
+  const availablePackages: TicketPackageInterface[] = [
+    {
+      id: "CARNIVAL",
+      name: "CARNIVAL",
+      price: carnivalPrice,
+      ticket: carnivalStock,
+      badge: "POPULER",
+      badgeBg: "rgb(185, 239, 197)",
+      badgeText: "rgb(42, 91, 59)",
+      description: "Akses area carnival, standing area & panggung utama",
+    },
+  ];
 
-  const availablePackages: TicketPackageInterface[] =
-    event?.packages && event.packages.length > 0
-      ? event.packages.map((pkg) => ({
-          ...pkg,
-          ticket:
-            pkg.ticket !== undefined
-              ? pkg.ticket
-              : pkg.quota !== undefined
-              ? pkg.quota
-              : pkg.id === "VIP"
-              ? vipTickets
-              : festivalTickets,
-        }))
-      : event?.ticket_types && event.ticket_types.length > 0
-      ? event.ticket_types.map((pkg) => ({
-          ...pkg,
-          ticket:
-            pkg.ticket !== undefined
-              ? pkg.ticket
-              : pkg.quota !== undefined
-              ? pkg.quota
-              : pkg.id === "VIP"
-              ? vipTickets
-              : festivalTickets,
-        }))
-      : [
-          {
-            id: "FESTIVAL",
-            name: "FESTIVAL",
-            price: festivalPrice,
-            ticket: festivalTickets,
-            badge: "POPULER",
-            badgeBg: "rgb(185, 239, 197)",
-            badgeText: "rgb(42, 91, 59)",
-            description: "Akses area festival, standing area & panggung utama",
-          },
-          {
-            id: "VIP",
-            name: "VIP",
-            price: vipPrice,
-            ticket: vipTickets,
-            badge: "PREMIUM",
-            badgeBg: "rgb(254, 240, 138)",
-            badgeText: "rgb(133, 77, 14)",
-            description: "Akses baris depan + tempat duduk khusus & fast lane",
-          },
-        ];
-
-  const [selectedPackageId, setSelectedPackageId] = useState<string>(
-    availablePackages[0]?.id || "FESTIVAL"
-  );
+  const [selectedPackageId, setSelectedPackageId] = useState<string>("CARNIVAL");
   const [ticketQuantity, setTicketQuantity] = useState<number>(initialCount);
   const [isUsernameErr, setIsUsernameErr] = useState<{ [key: number]: boolean }>({});
   const [isNikErr, setIsNikErr] = useState<boolean>(false);
@@ -95,7 +44,7 @@ export default function BuyModal({
 
   const availableStock = selectedPackage?.ticket !== undefined ? selectedPackage.ticket : 999;
   const isPackageSoldOut = availableStock <= 0;
-  const activeTicketPrice = selectedPackage?.price || festivalPrice;
+  const activeTicketPrice = selectedPackage?.price || carnivalPrice;
   const totalAmount = activeTicketPrice * ticketQuantity;
 
   const handleSelectPackage = (pkg: TicketPackageInterface) => {

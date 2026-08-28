@@ -21,10 +21,6 @@ export interface EventInterface {
   isSoldOut: boolean;
   location: string;
   price: number;
-  price_festival?: number;
-  price_vip?: number;
-  ticket_festival?: number;
-  ticket_vip?: number;
   packages?: TicketPackageInterface[];
   ticket_types?: TicketPackageInterface[];
   src: string;

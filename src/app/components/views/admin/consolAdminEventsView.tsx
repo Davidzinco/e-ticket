@@ -54,36 +54,20 @@ export default function ConsolAdminEventsView() {
             <span className="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Paket Festival */}
+          <div className="grid grid-cols-1 gap-6">
+            {/* Paket Carnival */}
             <div className="bg-surface-container-low p-5 rounded-2xl border border-outline-variant space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-sm text-on-surface">Paket FESTIVAL</h4>
+                <h4 className="font-extrabold text-sm text-on-surface">Paket CARNIVAL</h4>
                 <span className="text-[10px] font-bold py-0.5 px-2 bg-primary/10 text-primary rounded-md">
                   Reguler
                 </span>
               </div>
               <div className="text-2xl font-black text-on-surface">
-                Rp {(eventData?.price_festival || eventData?.price || 56000).toLocaleString("id-ID")}
+                Rp {(eventData?.price || 56000).toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-on-surface-variant">
-                Sisa Kuota: <strong>{eventData?.ticket_festival ?? 500}</strong> kupon
-              </p>
-            </div>
-
-            {/* Paket VIP */}
-            <div className="bg-surface-container-low p-5 rounded-2xl border border-outline-variant space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-sm text-on-surface">Paket VIP</h4>
-                <span className="text-[10px] font-bold py-0.5 px-2 bg-amber-500/10 text-amber-600 rounded-md">
-                  Special Access
-                </span>
-              </div>
-              <div className="text-2xl font-black text-on-surface">
-                Rp {(eventData?.price_vip || 140000).toLocaleString("id-ID")}
-              </div>
-              <p className="text-xs text-on-surface-variant">
-                Sisa Kuota: <strong>{eventData?.ticket_vip ?? 100}</strong> kupon
+                Sisa Kuota: <strong>{eventData?.ticket ?? 0}</strong> tiket (field &apos;ticket&apos;)
               </p>
             </div>
           </div>
