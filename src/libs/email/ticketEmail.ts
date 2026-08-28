@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import QRCode from "qrcode";
 import toDate from "@/app/components/utils/toDate";
 
 export interface SendTicketEmailParams {
@@ -97,14 +98,41 @@ export async function sendTicketEmail(
 
     const myTicketUrl = `${siteUrl}/myticket?email=${encodeURIComponent(email)}&nik=${encodeURIComponent(primaryNik)}`;
 
+    // Prepare binary Buffer attachments for high reliability CID rendering
+    const attachments: any[] = [];
+    const qrCidMap: string[] = [];
+
+    for (let i = 0; i < qrCodes.length; i++) {
+      const code = qrCodes[i];
+      const cid = `qr_${orderId.replace(/[^a-zA-Z0-9]/g, "")}_${i + 1}`;
+      qrCidMap.push(cid);
+
+      const qrDataUrl = await QRCode.toDataURL(code, {
+        width: 440,
+        margin: 3,
+        color: {
+          dark: "#000000",
+          light: "#ffffff",
+        },
+      });
+
+      const qrBuffer = Buffer.from(qrDataUrl.split("base64,")[1], "base64");
+      attachments.push({
+        filename: `qrcode_${i + 1}.png`,
+        content: qrBuffer,
+        cid: cid,
+        contentType: "image/png",
+        contentDisposition: "inline",
+      });
+    }
+
     // Build coupon cards matching http://localhost:3000/myticket
     const couponCardsHtml = qrCodes
       .map((code, index) => {
         const ownerName = names[index] || names[0] || "Pengunjung";
         const ownerNik = maskNik(niks[index] || primaryNik);
         const couponNumber = index + 1;
-
-        const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=6&data=${encodeURIComponent(code)}`;
+        const cidName = qrCidMap[index];
 
         return `
         <!-- COUPON CARD ${couponNumber} -->
@@ -173,7 +201,7 @@ export async function sendTicketEmail(
                     </strong>
                   </td>
                   <td width="50%" valign="top" style="padding-bottom: 12px; padding-left: 8px;">
-                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; word-break: break-all;">
                       ID Transaksi
                     </span>
                     <strong style="font-size: 13px; color: #181d18; display: block; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; word-break: break-all;">
@@ -205,11 +233,11 @@ export async function sendTicketEmail(
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f7faf6; border: 1px solid #dce4da; border-radius: 12px; text-align: center;">
                 <tr>
                   <td align="center" style="padding: 20px;">
-                    <!-- QR Code Image -->
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border: 1px solid #dce4da; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <!-- QR Code Image Container (White box with fixed background) -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff !important; border: 1px solid #dce4da; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                       <tr>
-                        <td align="center" style="padding: 10px;">
-                          <img src="${qrImageUrl}" alt="QR Code ${code}" width="220" height="220" style="display: block; margin: 0 auto; border: 0; outline: none; width: 220px; height: 220px; object-fit: contain;" />
+                        <td align="center" style="padding: 10px; background-color: #ffffff !important;">
+                          <img src="cid:${cidName}" alt="QR Code ${code}" width="200" height="200" style="display: block; margin: 0 auto; border: 0; outline: none; width: 200px; height: 200px; object-fit: contain; background-color: #ffffff !important;" />
                         </td>
                       </tr>
                     </table>
@@ -356,11 +384,15 @@ export async function sendTicketEmail(
 </html>
     `;
 
+    const plainText = `Halo ${names[0] || "Pengunjung"}!\n\nPembelian E-Coupon Bhima Night Carnival 2026 berhasil.\nOrder ID: #${orderId}\nEvent: ${eventName}\nWaktu & Lokasi: ${eventTimeStr} • ${eventLocation}\nKode Kupon: ${qrCodes.join(", ")}\n\nBuka E-Kupon kamu di web: ${myTicketUrl}\n\n© 2026 Bhima Night Carnival • SMAN 1 Madiun`;
+
     const sendResult = await transporter.sendMail({
       from: `"Bhima Night Carnival 2026" <${userEmail}>`,
       to: email,
       subject: `E-Coupon Resmi (${orderId}) - ${eventName || "Bhima Night Carnival 2026"}`,
+      text: plainText,
       html: emailHtml,
+      attachments,
     });
 
     if (sendResult.accepted && sendResult.accepted.length > 0) {
@@ -377,4 +409,3 @@ export async function sendTicketEmail(
     };
   }
 }
-
