@@ -112,8 +112,8 @@ function MyTicketContent() {
     if (!email || !email.includes("@")) {
       return toast.error("Format email tidak valid");
     }
-    if (!nik || nik.length < 8) {
-      return toast.error("Masukkan NIK minimal 8 digit angka");
+    if (!nik || nik.length !== 16 || !/^\d{16}$/.test(nik)) {
+      return toast.error("NIK wajib 16 digit angka");
     }
     fetchTickets(email.trim(), nik.trim());
   };
@@ -233,7 +233,9 @@ function MyTicketContent() {
                       required
                       value={nik}
                       onChange={(e) => setNik(e.target.value.replace(/\D/g, ""))}
-                      maxLength={20}
+                      maxLength={16}
+                      minLength={16}
+                      pattern="[0-9]{16}"
                       placeholder="Masukkan 16 digit NIK terdaftar"
                       className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-xl text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-mono"
                     />

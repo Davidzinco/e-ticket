@@ -124,7 +124,7 @@ export default function BuyModal({
 
     const formData = new FormData(e.currentTarget);
     const usernameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
-    const nikRegex = /^[0-9]{10,20}$/;
+    const nikRegex = /^[0-9]{16}$/;
 
     // Validasi Nama Setiap Pengunjung
     const newErrors: { [key: number]: boolean } = {};
@@ -147,7 +147,7 @@ export default function BuyModal({
 
     if (hasNikError) {
       setIsLoading(false);
-      return toast.error("NIK kontak utama wajib diisi dengan 16 digit angka valid");
+      return toast.error("NIK kontak utama wajib diisi tepat 16 digit angka");
     }
 
     // Validasi Email
@@ -400,13 +400,14 @@ export default function BuyModal({
                 name="nik"
                 placeholder="Contoh: 3519012345670001 (16 digit angka)"
                 required
-                minLength={10}
-                maxLength={20}
+                minLength={16}
+                maxLength={16}
+                pattern="[0-9]{16}"
                 className="w-full rounded-lg bg-surface-container-lowest border border-outline-variant focus:border-primary text-on-surface placeholder-on-surface-variant/50 px-3 py-2 text-xs outline-none transition-colors font-mono"
               />
               {isNikErr && (
                 <p className="text-red-500 text-[11px] mt-1">
-                  NIK wajib diisi dengan 16 digit angka valid
+                  NIK wajib diisi tepat 16 digit angka
                 </p>
               )}
             </div>

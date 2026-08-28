@@ -61,10 +61,10 @@ export async function POST(req: NextRequest) {
     }
 
     const primaryNik = Array.isArray(niks) && niks[0] ? String(niks[0]).trim() : "";
-    const nikRegex = /^[0-9]{10,20}$/;
+    const nikRegex = /^[0-9]{16}$/;
     if (!primaryNik || !nikRegex.test(primaryNik)) {
       return NextResponse.json(
-        { message: "NIK kontak utama wajib diisi dengan 10-20 digit angka" },
+        { message: "NIK kontak utama wajib diisi dengan 16 digit angka" },
         { status: 400 }
       );
     }

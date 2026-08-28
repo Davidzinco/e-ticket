@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!nik || nik.length < 8) {
+    if (!nik || !/^\d{16}$/.test(nik)) {
       return NextResponse.json(
-        { success: false, message: "NIK wajib diisi minimal 8 digit angka." },
+        { success: false, message: "NIK wajib diisi tepat 16 digit angka." },
         { status: 400 }
       );
     }
