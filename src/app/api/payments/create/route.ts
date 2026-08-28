@@ -190,6 +190,11 @@ export async function POST(req: NextRequest) {
       sendTicketEmail({
         email: cleanEmail,
         names: transactionResult.paymentRecord.name,
+        niks: transactionResult.paymentRecord.nik || [primaryNik],
+        orderId: orderId,
+        transactionId: `BYPASS-${orderId}`,
+        transactionTime: nowIso,
+        paymentType: "TEST_BYPASS",
         eventName: transactionResult.productName,
         eventTimestamp: transactionResult.eventData.timestamp,
         eventLocation: transactionResult.eventData.location,

@@ -24,25 +24,35 @@ export default function ConsolAdminSettingsView() {
     }
   };
 
-  const handleSyncSheets = async (action: "test" | "sync_all") => {
+  const handleSyncSheets = async (action: "test" | "sync_all" | "test_email") => {
     setIsSyncing(true);
     setSyncResult(null);
     try {
+      let targetEmail = "";
+      if (action === "test_email") {
+        const input = window.prompt("Masukkan alamat email tujuan untuk menerima contoh E-Kupon:", "user@example.com");
+        if (!input) {
+          setIsSyncing(false);
+          return;
+        }
+        targetEmail = input.trim();
+      }
+
       const res = await fetch("/api/admin/sync-sheets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, targetEmail }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(data.message || "Sinkronisasi berhasil!");
-        setSyncResult(`Berhasil: ${data.message} ${data.count ? `(${data.count} tiket)` : ""}`);
+        toast.success(data.message || (action === "test_email" ? "Email e-kupon berhasil dikirim!" : "Sinkronisasi berhasil!"));
+        setSyncResult(`Berhasil: ${data.message || "Email e-kupon berhasil dikirim ke target"} ${data.count ? `(${data.count} kupon)` : ""}`);
       } else {
-        toast.error(data.message || "Gagal sinkronisasi.");
+        toast.error(data.message || "Gagal melakukan aksi.");
         setSyncResult(`Gagal: ${data.message}`);
       }
     } catch {
-      toast.error("Terjadi kesalahan jaringan saat sync.");
+      toast.error("Terjadi kesalahan jaringan.");
       setSyncResult("Gagal terhubung ke server.");
     } finally {
       setIsSyncing(false);
@@ -79,7 +89,7 @@ export default function ConsolAdminSettingsView() {
 
         {/* Sync Action Buttons */}
         <div className="space-y-3 pt-2">
-          <h4 className="font-extrabold text-xs text-on-surface">Aksi & Pengujian Sinkronisasi:</h4>
+          <h4 className="font-extrabold text-xs text-on-surface">Aksi &amp; Pengujian Sinkronisasi &amp; Email:</h4>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => handleSyncSheets("test")}
@@ -87,7 +97,15 @@ export default function ConsolAdminSettingsView() {
               className="py-2.5 px-4 rounded-xl border border-outline-variant text-xs font-bold hover:bg-surface-container transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-base">send</span>
-              <span>Kirim 1 Baris Uji Coba ke Spreadsheet</span>
+              <span>Kirim 1 Baris Uji Coba ke Sheets</span>
+            </button>
+            <button
+              onClick={() => handleSyncSheets("test_email")}
+              disabled={isSyncing}
+              className="py-2.5 px-4 rounded-xl border border-outline-variant text-xs font-bold hover:bg-surface-container transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-base">mail</span>
+              <span>Kirim Uji Coba Email E-Kupon</span>
             </button>
             <button
               onClick={() => handleSyncSheets("sync_all")}
@@ -96,7 +114,7 @@ export default function ConsolAdminSettingsView() {
               style={{ backgroundColor: "rgb(56, 105, 72)" }}
             >
               <span className="material-symbols-outlined text-base">sync</span>
-              <span>Sinkronkan Seluruh Kupon Database ke Spreadsheet</span>
+              <span>Sinkronkan Seluruh Kupon ke Sheets</span>
             </button>
           </div>
 

@@ -187,6 +187,11 @@ export async function POST(req: NextRequest) {
           await sendTicketEmail({
             email: paymentData.email,
             names: paymentData.name,
+            niks: paymentData.nik || [primaryNik],
+            orderId: orderId,
+            transactionId: transactionId,
+            transactionTime: transactionTime,
+            paymentType: paymentType,
             eventName: paymentData.event_name,
             eventTimestamp: eventData?.timestamp,
             eventLocation: eventData?.location,

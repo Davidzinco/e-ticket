@@ -17,7 +17,26 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const action = body.action || "sync_all"; // "sync_all" or "test"
+    const action = body.action || "sync_all"; // "sync_all", "test", "test_email"
+
+    if (action === "test_email") {
+      const targetEmail = body.targetEmail || process.env.DEFAULT_EMAIL_USER_ADMIN || "test@example.com";
+      const { sendTicketEmail } = await import("@/libs/email/ticketEmail");
+      const emailResult = await sendTicketEmail({
+        email: targetEmail,
+        names: ["David Zinco", "Audience SMASA"],
+        niks: ["3519082820260001", "3519082820260002"],
+        orderId: `BNC-TEST-${Date.now().toString().slice(-6)}`,
+        transactionId: `TRX-TEST-${Date.now()}`,
+        transactionTime: new Date().toLocaleDateString("id-ID") + " • " + new Date().toLocaleTimeString("id-ID") + " WIB",
+        paymentType: "GMAIL_TEST",
+        eventName: "Bhima Night Carnival 2026",
+        eventLocation: "SMAN 1 Madiun",
+        qrCodes: [`BNC2026-TEST-${Date.now().toString().slice(-4)}-01`, `BNC2026-TEST-${Date.now().toString().slice(-4)}-02`],
+      });
+
+      return NextResponse.json(emailResult);
+    }
 
     if (action === "test") {
       const testItem: QrCodeInterface = {

@@ -1,353 +1,418 @@
 import nodemailer from "nodemailer";
 import QRCode from "qrcode";
 import path from "path";
+import fs from "fs";
 import toDate from "@/app/components/utils/toDate";
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.DEFAULT_EMAIL_USER_ADMIN,
-    pass: process.env.DEFAULT_EMAIL_PASSWORD_ADMIN,
-  },
-});
 
 export interface SendTicketEmailParams {
   email: string;
   names: string[];
+  niks?: string[];
+  orderId?: string;
+  transactionId?: string;
+  transactionTime?: string;
+  paymentType?: string;
   eventName: string;
-  eventTimestamp?: { seconds: number };
+  eventTimestamp?: { seconds: number } | Date | string | any;
   eventLocation?: string;
   eventImageSrc?: string;
   qrCodes: string[];
 }
 
-export async function sendTicketEmail(params: SendTicketEmailParams): Promise<{ success: boolean; message?: string }> {
+function maskNik(rawNik?: string): string {
+  if (!rawNik || rawNik === "-") return "-";
+  const cleaned = String(rawNik).trim();
+  if (cleaned.length <= 8) return cleaned.slice(0, 3) + "****" + cleaned.slice(-2);
+  return cleaned.slice(0, 4) + "*".repeat(cleaned.length - 8) + cleaned.slice(-4);
+}
+
+function formatEventDateTime(timestamp?: any, defaultStr = "15 Desember 2026 • 16:00 WIB"): string {
+  if (!timestamp) return defaultStr;
   try {
-    const { email, names, eventName, eventTimestamp, eventLocation, eventImageSrc, qrCodes } = params;
+    const d = toDate(timestamp);
+    if (d && !isNaN(d.getTime())) {
+      const dateStr = d.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Jakarta",
+      });
+      const timeStr = d.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Jakarta",
+      });
+      return `${dateStr} • ${timeStr} WIB`;
+    }
+  } catch {
+    // Fallback if parsing fails
+  }
+  return defaultStr;
+}
 
+export async function sendTicketEmail(
+  params: SendTicketEmailParams
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const userEmail = process.env.DEFAULT_EMAIL_USER_ADMIN;
+    const passEmail = process.env.DEFAULT_EMAIL_PASSWORD_ADMIN;
+
+    if (!userEmail || !passEmail) {
+      console.warn("⚠️ SMTP credentials not configured (DEFAULT_EMAIL_USER_ADMIN / DEFAULT_EMAIL_PASSWORD_ADMIN). Skipping email dispatch.");
+      return { success: false, message: "SMTP credentials not configured" };
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: userEmail,
+        pass: passEmail,
+      },
+    });
+
+    const {
+      email,
+      names,
+      niks = [],
+      orderId = "",
+      transactionId = "",
+      transactionTime,
+      eventName,
+      eventTimestamp,
+      eventLocation = "SMAN 1 Madiun",
+      eventImageSrc,
+      qrCodes,
+    } = params;
+
+    // Generate high-resolution QR PNGs (Base64)
     const qrImages: string[] = [];
-
     for (const code of qrCodes) {
       const qrImage = await QRCode.toDataURL(code, {
-        width: 500,
+        width: 440,
         margin: 2,
+        color: {
+          dark: "#181d18",
+          light: "#ffffff",
+        },
       });
       qrImages.push(qrImage);
     }
 
-    const dateConvert = eventTimestamp
-      ? toDate(eventTimestamp as any).toLocaleDateString("id-ID").split("/").join("-")
-      : "-";
-      
-    const imageName = eventImageSrc 
-      ? eventImageSrc.slice(eventImageSrc.lastIndexOf("/") + 1)
-      : "default.png"; // Fallback if no image src provided
+    const eventTimeStr = formatEventDateTime(eventTimestamp, transactionTime || "15 Desember 2026 • 16:00 WIB");
+    const primaryNik = niks[0] || "";
+    const totalTickets = qrCodes.length;
 
-    const qrHtml = qrImages
-      .map((_, index) => {
+    // Resolve site url for web lookup button
+    const siteUrl =
+      process.env.NEXTAUTH_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+
+    const myTicketUrl = `${siteUrl}/myticket?email=${encodeURIComponent(email)}&nik=${encodeURIComponent(primaryNik)}`;
+
+    // Build coupon cards matching http://localhost:3000/myticket
+    const couponCardsHtml = qrCodes
+      .map((code, index) => {
+        const ownerName = names[index] || names[0] || "Pengunjung";
+        const ownerNik = maskNik(niks[index] || primaryNik);
+        const couponNumber = index + 1;
+
         return `
-<tr><td align="center">
-<table class="t119" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t118" style="width:600px;">
-<table class="t117" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t116"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td><div class="t33" style="mso-line-height-rule:exactly;mso-line-height-alt:5px;line-height:5px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t37" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="250" class="t36" style="width:250px;">
-<table class="t35" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t34" style="overflow:hidden;background-color:#F6F6F6;border-radius:12px 12px 12px 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td><div class="t28" style="mso-line-height-rule:exactly;mso-line-height-alt:10px;line-height:10px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t32" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="250" class="t31" style="width:300px;">
-<table class="t30" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t29"><div style="font-size:0px;"><img class="t27" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="250" height="250" alt="" src="cid:qrcode_${
-          index + 1
-        }"/></div></td></tr></table>
-</td></tr></table>
-</td></tr></table></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t38" style="mso-line-height-rule:exactly;mso-line-height-alt:5px;line-height:5px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td><div class="t110" style="mso-line-height-rule:exactly;mso-line-height-alt:5px;line-height:5px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t114" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="440" class="t113" style="width:440px;">
-<table class="t112" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t111" style="overflow:hidden;background-color:#F6F6F6;padding:30px 40px 30px 40px;border-radius:12px 12px 12px 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td align="center">
-<table class="t55" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="360" class="t54" style="width:800px;">
-<table class="t53" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t52"><div class="t51" style="width:100%;text-align:left;"><div class="t50" style="display:inline-block;"><table class="t49" role="presentation" cellpadding="0" cellspacing="0" align="left" valign="top">
-<tr class="t48"><td></td><td class="t43" width="93.75" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t42" style="width:100%;"><tr><td class="t40"><p class="t39" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:600;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Nama</p></td><td class="t41" style="width:5px;" width="5"></td></tr></table>
-</td><td class="t47" width="266.25" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t46" style="width:100%;"><tr><td class="t45"><p class="t44" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#787878;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">${
-          names[index] || "Guest"
-        }</p></td></tr></table>
-</td>
-<td></td></tr>
-</table></div></div></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t69" style="mso-line-height-rule:exactly;mso-line-height-alt:10px;line-height:10px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t73" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="360" class="t72" style="width:800px;">
-<table class="t71" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t70"><div class="t68" style="width:100%;text-align:left;"><div class="t67" style="display:inline-block;"><table class="t66" role="presentation" cellpadding="0" cellspacing="0" align="left" valign="top">
-<tr class="t65"><td></td><td class="t60" width="93.75" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t59" style="width:100%;"><tr><td class="t57"><p class="t56" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:600;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Event</p></td><td class="t58" style="width:5px;" width="5"></td></tr></table>
-</td><td class="t64" width="266.25" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t63" style="width:100%;"><tr><td class="t62"><p class="t61" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#787878;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">${
-          eventName
-        }</p></td></tr></table>
-</td>
-<td></td></tr>
-</table></div></div></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t87" style="mso-line-height-rule:exactly;mso-line-height-alt:10px;line-height:10px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t91" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="360" class="t90" style="width:800px;">
-<table class="t89" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t88"><div class="t86" style="width:100%;text-align:left;"><div class="t85" style="display:inline-block;"><table class="t84" role="presentation" cellpadding="0" cellspacing="0" align="left" valign="top">
-<tr class="t83"><td></td><td class="t78" width="93.75" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t77" style="width:100%;"><tr><td class="t75"><p class="t74" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:600;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Tanggal</p></td><td class="t76" style="width:5px;" width="5"></td></tr></table>
-</td><td class="t82" width="266.25" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t81" style="width:100%;"><tr><td class="t80"><p class="t79" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#787878;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">${dateConvert}</p></td></tr></table>
-</td>
-<td></td></tr>
-</table></div></div></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t105" style="mso-line-height-rule:exactly;mso-line-height-alt:10px;line-height:10px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t109" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="360" class="t108" style="width:800px;">
-<table class="t107" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t106"><div class="t104" style="width:100%;text-align:left;"><div class="t103" style="display:inline-block;"><table class="t102" role="presentation" cellpadding="0" cellspacing="0" align="left" valign="top">
-<tr class="t101"><td></td><td class="t96" width="93.75" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t95" style="width:100%;"><tr><td class="t93"><p class="t92" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:600;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Lokasi</p></td><td class="t94" style="width:5px;" width="5"></td></tr></table>
-</td><td class="t100" width="266.25" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t99" style="width:100%;"><tr><td class="t98"><p class="t97" style="margin:0;Margin:0;font-family:Inter Tight,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;direction:ltr;color:#787878;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">${
-          eventLocation || "-"
-        }</p></td></tr></table>
-</td>
-<td></td></tr>
-</table></div></div></td></tr></table>
-</td></tr></table>
-</td></tr></table></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t115" style="mso-line-height-rule:exactly;mso-line-height-alt:5px;line-height:5px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr></table></td></tr></table>
-</td></tr></table>
-</td></tr>
-`;
+        <!-- COUPON CARD ${couponNumber} -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #dbe2d9; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); overflow: hidden;">
+          <tr>
+            <td style="padding: 24px 24px 20px 24px;">
+              <!-- Card Header -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" valign="middle">
+                    <span style="display: inline-block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #386948; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      OFFICIAL E-COUPON
+                    </span>
+                    ${
+                      totalTickets > 1
+                        ? `<span style="display: inline-block; font-size: 10px; font-weight: 700; background-color: #edf2eb; color: #2e3830; padding: 2px 8px; border-radius: 9999px; margin-left: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                            Kupon ${couponNumber} dari ${totalTickets}
+                          </span>`
+                        : ""
+                    }
+                    <h3 style="margin: 4px 0 0 0; font-size: 18px; font-weight: 800; color: #181d18; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.3;">
+                      ${eventName || "Bhima Night Carnival 2026"}
+                    </h3>
+                    <p style="margin: 2px 0 0 0; font-size: 12px; color: #657064; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      ${eventTimeStr} • ${eventLocation}
+                    </p>
+                  </td>
+                  <td align="right" valign="top" style="white-space: nowrap;">
+                    <span style="display: inline-block; padding: 5px 14px; font-size: 11px; font-weight: 800; border-radius: 9999px; color: #2a5b3b; background-color: #b9efc5; border: 1px solid #86db99; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      VALID
+                    </span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Dashed Divider -->
+              <div style="border-top: 1px dashed #d1dcd0; margin: 18px 0 18px 0;"></div>
+
+              <!-- Ticket Info Grid -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td width="50%" valign="top" style="padding-bottom: 12px; padding-right: 8px;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      Nama Pemilik Kupon
+                    </span>
+                    <strong style="font-size: 14px; color: #181d18; display: block; margin-top: 2px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      ${ownerName}
+                    </strong>
+                  </td>
+                  <td width="50%" valign="top" style="padding-bottom: 12px; padding-left: 8px;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      Identitas (NIK)
+                    </span>
+                    <strong style="font-size: 14px; color: #181d18; display: block; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                      ${ownerNik}
+                    </strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="50%" valign="top" style="padding-bottom: 12px; padding-right: 8px;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      Order ID
+                    </span>
+                    <strong style="font-size: 13px; color: #181d18; display: block; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+                      #${orderId || "-"}
+                    </strong>
+                  </td>
+                  <td width="50%" valign="top" style="padding-bottom: 12px; padding-left: 8px;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      ID Transaksi
+                    </span>
+                    <strong style="font-size: 13px; color: #181d18; display: block; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; word-break: break-all;">
+                      ${transactionId || "-"}
+                    </strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="50%" valign="top" style="padding-right: 8px;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      Email Pemesan
+                    </span>
+                    <strong style="font-size: 13px; color: #181d18; display: block; margin-top: 2px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; word-break: break-all;">
+                      ${email}
+                    </strong>
+                  </td>
+                  <td width="50%" valign="top" style="padding-left: 8px;">
+                    <span style="font-size: 10px; color: #6b776a; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      Status Pembayaran
+                    </span>
+                    <strong style="font-size: 13px; color: #386948; text-transform: uppercase; display: block; margin-top: 2px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      LUNAS
+                    </strong>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- QR Code Display Box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f7faf6; border: 1px solid #dce4da; border-radius: 12px; text-align: center;">
+                <tr>
+                  <td align="center" style="padding: 20px;">
+                    <!-- QR Code Image -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border: 1px solid #dce4da; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                      <tr>
+                        <td align="center" style="padding: 10px;">
+                          <img src="cid:qrcode_${couponNumber}" alt="QR Code ${code}" width="220" height="220" style="display: block; border: 0; outline: none; width: 220px; height: 220px; object-fit: contain;" />
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- QR Alphanumeric Code Pill -->
+                    <div style="margin-top: 14px;">
+                      <span style="display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; color: #181d18; background-color: #e5ece3; padding: 6px 16px; border-radius: 8px; border: 1px solid #ced8cb;">
+                        ${code}
+                      </span>
+                    </div>
+
+                    <p style="margin: 8px 0 0 0; font-size: 11px; color: #6b776a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                      Tunjukkan QR Code ini kepada panitia di pintu masuk acara.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        `;
       })
       .join("");
 
-    const sendResult = await transporter.sendMail({
-      from: process.env.DEFAULT_EMAIL_USER_ADMIN,
-      to: email,
-      subject: "E-Coupon QR Code by SMA Negeri 1 Madiun",
-      html: `
-           <!--
-* This email was built using Tabular.
-* For more information, visit https://tabular.email
--->
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
-<head>
-<title></title>
-<meta charset="UTF-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<!--[if !mso]>-->
-<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<!--<![endif]-->
-<meta name="x-apple-disable-message-reformatting" content="" />
-<meta content="target-densitydpi=device-dpi" name="viewport" />
-<meta content="true" name="HandheldFriendly" />
-<meta content="width=device-width" name="viewport" />
-<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
-<style type="text/css">
-table {
-border-collapse: separate;
-table-layout: fixed;
-mso-table-lspace: 0pt;
-mso-table-rspace: 0pt
-}
-table td {
-border-collapse: collapse
-}
-.ExternalClass {
-width: 100%
-}
-.ExternalClass,
-.ExternalClass p,
-.ExternalClass span,
-.ExternalClass font,
-.ExternalClass td,
-.ExternalClass div {
-line-height: 100%
-}
-body, a, li, p, h1, h2, h3 {
--ms-text-size-adjust: 100%;
--webkit-text-size-adjust: 100%;
-}
-html {
--webkit-text-size-adjust: none !important
-}
-body {
-min-width: 100%;
-Margin: 0px;
-padding: 0px;
-}
-body, #innerTable {
--webkit-font-smoothing: antialiased;
--moz-osx-font-smoothing: grayscale
-}
-#innerTable img+div {
-display: none;
-display: none !important
-}
-img {
-Margin: 0;
-padding: 0;
--ms-interpolation-mode: bicubic
-}
-h1, h2, h3, p, a {
-line-height: inherit;
-overflow-wrap: normal;
-white-space: normal;
-word-break: break-word
-}
-a {
-text-decoration: none
-}
-h1, h2, h3, p {
-min-width: 100%!important;
-width: 100%!important;
-max-width: 100%!important;
-display: inline-block!important;
-border: 0;
-padding: 0;
-margin: 0
-}
-a[x-apple-data-detectors] {
-color: inherit !important;
-text-decoration: none !important;
-font-size: inherit !important;
-font-family: inherit !important;
-font-weight: inherit !important;
-line-height: inherit !important
-}
-u + #body a {
-color: inherit;
-text-decoration: none;
-font-size: inherit;
-font-family: inherit;
-font-weight: inherit;
-line-height: inherit;
-}
-a[href^="mailto"],
-a[href^="tel"],
-a[href^="sms"] {
-color: inherit;
-text-decoration: none
-}
-</style>
-<style type="text/css">
-@media (min-width: 481px) {
-.hd { display: none!important }
-}
-</style>
-<style type="text/css">
-@media (max-width: 480px) {
-.hm { display: none!important }
-}
-</style>
-<style type="text/css">
-@media (max-width: 480px) {
-.t10,.t5{color:#1a1a1a!important}.t1{padding-top:0!important}.t218{padding:40px 30px!important;background-color:#f7f7f7!important}.t11{padding-bottom:20px!important}.t10{line-height:28px!important;font-size:26px!important;letter-spacing:-1.04px!important}.t264{padding:40px 30px!important}.t250{padding-bottom:36px!important}.t246{text-align:center!important}.t134,.t151,.t169,.t187,.t229,.t234,.t239,.t41,.t58,.t76,.t94{display:revert!important}.t231,.t236,.t241{vertical-align:top!important;width:49px!important}.t245{vertical-align:top!important;width:24px!important}.t111,.t127,.t204,.t34{border-radius:0!important}.t101,.t141,.t158,.t176,.t194,.t48,.t65,.t83{text-align:left!important}.t136,.t153,.t171,.t189,.t43,.t60,.t78,.t96{vertical-align:top!important;width:205px!important}.t100,.t140,.t157,.t175,.t193,.t47,.t64,.t82{vertical-align:top!important;width:600px!important}
-}
-</style>
-<!--[if !mso]>-->
-<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:ital,wght@0,500;0,800;1,500&amp;family=Roboto:wght@700&amp;family=Inter+Tight:wght@500;600&amp;display=swap" rel="stylesheet" type="text/css" />
-<!--<![endif]-->
-<!--[if mso]>
-<xml>
-<o:OfficeDocumentSettings>
-<o:AllowPNG/>
-<o:PixelsPerInch>96</o:PixelsPerInch>
-</o:OfficeDocumentSettings>
-</xml>
-<![endif]-->
-</head>
-<body id="body" class="t270" style="min-width:100%;Margin:0px;padding:0px;background-color:#242424;"><div class="t269" style="background-color:#242424;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td class="t268" style="font-size:0;line-height:0;mso-line-height-rule:exactly;background-color:#242424;" valign="top" align="center">
-<!--[if mso]>
-<v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false">
-<v:fill color="#242424"/>
-</v:background>
-<![endif]-->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" id="innerTable"><tr><td align="center">
-<table class="t4" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="600" class="t3" style="width:600px;">
-<table class="t2" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t1" style="padding:48px 0 0 0;"><div style="font-size:0px;"><img class="t0" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="600" height="356.25" alt="" src="cid:banner"/></div></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td align="center">
-<table class="t221" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="600" class="t220" style="width:600px;">
-<table class="t219" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t218" style="background-color:#F8F8F8;padding:60px 50px 60px 50px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td align="center">
-<table class="t9" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t8" style="width:600px;">
-<table class="t7" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t6" style="padding:0 0 6px 0;"><h1 class="t5" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:16px;font-weight:800;font-style:normal;font-size:16px;text-decoration:none;text-transform:uppercase;letter-spacing:3px;direction:ltr;color:#191919;text-align:left;mso-line-height-rule:exactly;">E-Coupon SMASA</h1></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td align="center">
-<table class="t14" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t13" style="width:600px;">
-<table class="t12" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t11"><h1 class="t10" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:41px;font-weight:800;font-style:normal;font-size:39px;text-decoration:none;text-transform:none;letter-spacing:-1.56px;direction:ltr;color:#191919;text-align:left;mso-line-height-rule:exactly;mso-text-raise:1px;">Pembelian Kupon Berhasil 🎊</h1></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t15" style="mso-line-height-rule:exactly;mso-line-height-alt:6px;line-height:6px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t20" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t19" style="width:600px;">
-<table class="t18" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t17"><h2 class="t16" style="margin:0;Margin:0;font-family:Roboto,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:30px;font-weight:700;font-style:normal;font-size:28px;text-decoration:none;text-transform:none;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:1px;">Hai ${names[0] || "Guest"} 👋🏻</h2></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td><div class="t21" style="mso-line-height-rule:exactly;mso-line-height-alt:10px;line-height:10px;font-size:1px;display:block;">&nbsp;&nbsp;</div></td></tr><tr><td align="center">
-<table class="t26" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t25" style="width:600px;">
-<table class="t24" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t23"><p class="t22" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:16px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:left;mso-line-height-rule:exactly;mso-text-raise:2px;">Berikut adalah QR Code kamu<br/>Tunjukkan QR Code ini pada panitia</p></td></tr></table>
-</td></tr></table>
-</td></tr>
-${qrHtml}
-<tr><td align="center">
-<table class="t217" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t216" style="width:600px;">
-<table class="t215" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t214" style="padding:0 0 3px 0;"><p class="t213" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:italic;font-size:16px;text-decoration:none;text-transform:none;letter-spacing:-0.56px;direction:ltr;color:#333333;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">QR Code hanya bisa di scan sekali! Silahkan konfirmasi ke panitia jika ingin keluar dan masuk lagi ke event tersebut</p></td></tr></table>
-</td></tr></table>
-</td></tr></table></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td align="center">
-<table class="t267" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="600" class="t266" style="width:600px;">
-<table class="t265" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t264" style="padding:48px 50px 48px 50px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100% !important;"><tr><td align="center">
-<table class="t226" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t225" style="width:600px;">
-<table class="t224" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t223"><p class="t222" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:800;font-style:normal;font-size:18px;text-decoration:none;text-transform:none;letter-spacing:-0.9px;direction:ltr;color:#757575;text-align:center;mso-line-height-rule:exactly;mso-text-raise:1px;">Temukan Kami di Media Sosial</p></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td align="center">
-<table class="t253" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t252" style="width:800px;">
-<table class="t251" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t250" style="padding:10px 0 10px 0;"><div class="t249" style="width:100%;text-align:center;"><div class="t248" style="display:inline-block;"><table class="t247" role="presentation" cellpadding="0" cellspacing="0" align="center" valign="top">
-<tr class="t246"><td></td><td class="t231" width="49" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t230" style="width:100%;"><tr><td class="t228"><div style="font-size:0px;"><img class="t227" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://5315b7be-4a3b-4b68-a98d-29d6fc66bfca.b-cdn.net/e/10fdbaa2-5f77-45a3-8aba-9d03c712fed8/50f96a91-e655-4327-82d4-7dae95c9726b.png"/></div></td><td class="t229" style="width:25px;" width="25"></td></tr></table>
-</td><td class="t236" width="49" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t235" style="width:100%;"><tr><td class="t233"><div style="font-size:0px;"><img class="t232" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://5315b7be-4a3b-4b68-a98d-29d6fc66bfca.b-cdn.net/e/10fdbaa2-5f77-45a3-8aba-9d03c712fed8/35ae5083-3e59-4690-b516-547ebd1dd1ed.png"/></div></td><td class="t234" style="width:25px;" width="25"></td></tr></table>
-</td><td class="t241" width="49" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t240" style="width:100%;"><tr><td class="t238"><div style="font-size:0px;"><img class="t237" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://5315b7be-4a3b-4b68-a98d-29d6fc66bfca.b-cdn.net/e/10fdbaa2-5f77-45a3-8aba-9d03c712fed8/f5d11977-4471-4151-85ca-acd605ce3e83.png"/></div></td><td class="t239" style="width:25px;" width="25"></td></tr></table>
-</td><td class="t245" width="24" valign="top">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="t244" style="width:100%;"><tr><td class="t243"><a href="https://www.instagram.com/alexanderfarrel._/" style="font-size:0px;" target="_blank"><img class="t242" style="display:block;border:0;height:auto;width:100%;Margin:0;max-width:100%;" width="24" height="24" alt="" src="https://5315b7be-4a3b-4b68-a98d-29d6fc66bfca.b-cdn.net/e/10fdbaa2-5f77-45a3-8aba-9d03c712fed8/2c314951-5c74-40dd-9653-7087a0f19ae3.png"/></a></td></tr></table>
-</td>
-<td></td></tr>
-</table></div></div></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td align="center">
-<table class="t258" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="500" class="t257" style="width:600px;">
-<table class="t256" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t255"><p class="t254" style="margin:0;Margin:0;font-family:Albert Sans,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:22px;font-weight:500;font-style:normal;font-size:12px;text-decoration:none;text-transform:none;direction:ltr;color:#888888;text-align:center;mso-line-height-rule:exactly;mso-text-raise:3px;">Jl. Mastrip No.19, Mojorejo, Kec. Taman, Kota Madiun, Jawa Timur 63139</p></td></tr></table>
-</td></tr></table>
-</td></tr><tr><td align="center">
-<table class="t263" role="presentation" cellpadding="0" cellspacing="0" style="Margin-left:auto;Margin-right:auto;"><tr><td width="200" class="t262" style="width:200px;">
-<table class="t261" role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tr><td class="t260" style="background-color:#242424;text-align:center;line-height:24px;mso-line-height-rule:exactly;mso-text-raise:3px;"><a class="t259" href="https://sman1madiun.sch.id/" style="display:block;margin:0;Margin:0;font-family:Roboto,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif;line-height:24px;font-weight:700;font-style:normal;font-size:14px;text-decoration:none;direction:ltr;color:#0A81FF;text-align:center;mso-line-height-rule:exactly;mso-text-raise:3px;" target="_blank">SMA Negeri 1 Madiun</a></td></tr></table>
-</td></tr></table>
-</td></tr></table></td></tr></table>
-</td></tr></table>
-</td></tr></table></td></tr></table></div><div class="gmail-fix" style="display: none; white-space: nowrap; font: 15px courier; line-height: 0;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</div></body>
-</html>
-          `,
-      attachments: [
-        {
-          filename: imageName,
-          path: path.join(process.cwd(), "public", "images", "bnc_2025", imageName),
-          cid: "banner",
-        },
-        ...qrImages.map((img, index) => ({
-          filename: `qrcode_${index + 1}.png`,
-          content: img.split("base64,")[1],
-          encoding: "base64",
-          cid: `qrcode_${index + 1}`,
-        })),
-      ],
-    });
+    // Prepare optional banner attachment
+    const attachments: any[] = qrImages.map((img, index) => ({
+      filename: `Coupon_QR_${index + 1}.png`,
+      content: img.split("base64,")[1],
+      encoding: "base64",
+      cid: `qrcode_${index + 1}`,
+    }));
 
-    if (sendResult.accepted.length <= 0) {
-      return { success: false, message: "Email not accepted by any recipient" };
+    let bannerCidPresent = false;
+    if (eventImageSrc) {
+      const bannerFilename = eventImageSrc.slice(eventImageSrc.lastIndexOf("/") + 1);
+      const possiblePath = path.join(process.cwd(), "public", "images", "bnc_2025", bannerFilename);
+      if (fs.existsSync(possiblePath)) {
+        attachments.unshift({
+          filename: bannerFilename,
+          path: possiblePath,
+          cid: "banner",
+        });
+        bannerCidPresent = true;
+      }
     }
 
-    return { success: true };
+    const emailHtml = `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="id">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Coupon Official - Bhima Night Carnival 2026</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #121914; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #121914; min-height: 100vh;">
+    <tr>
+      <td align="center" style="padding: 30px 15px 50px 15px;">
+        <!-- MAIN CONTAINER (Max width 600px) -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto;">
+          
+          <!-- BRAND / BANNER HEADER -->
+          <tr>
+            <td align="center" style="padding-bottom: 24px;">
+              ${
+                bannerCidPresent
+                  ? `<img src="cid:banner" alt="BNC 2026 Banner" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />`
+                  : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #1d3324 0%, #0d1710 100%); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
+                      <tr>
+                        <td style="padding: 28px 20px;">
+                          <span style="font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #86db99; text-transform: uppercase;">
+                            SMA NEGERI 1 MADIUN
+                          </span>
+                          <h1 style="margin: 6px 0 0 0; font-size: 24px; font-weight: 800; color: #ffffff;">
+                            BHIMA NIGHT CARNIVAL 2026
+                          </h1>
+                        </td>
+                      </tr>
+                    </table>`
+              }
+            </td>
+          </tr>
+
+          <!-- GREETING & SUCCESS BANNER -->
+          <tr>
+            <td style="padding-bottom: 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 24px;">
+                <tr>
+                  <td>
+                    <span style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #86db99; text-transform: uppercase;">
+                      E-COUPON RESMI SMASA
+                    </span>
+                    <h2 style="margin: 6px 0 0 0; font-size: 22px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+                      Pembelian Kupon Berhasil 🎊
+                    </h2>
+                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #c0ccc2; line-height: 1.5;">
+                      Hai <strong style="color: #ffffff;">${names[0] || "Pengunjung"}</strong> 👋🏻, transaksi kamu telah berhasil diverifikasi. Berikut adalah data e-kupon dan QR Code resmi kamu:
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- COUPON CARDS LIST -->
+          <tr>
+            <td>
+              ${couponCardsHtml}
+            </td>
+          </tr>
+
+          <!-- WEB ACCESS CTA BUTTON -->
+          <tr>
+            <td align="center" style="padding: 10px 0 30px 0;">
+              <a href="${myTicketUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; background-color: rgb(56, 105, 72); color: #ffffff; font-size: 14px; font-weight: 800; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 14px rgba(56, 105, 72, 0.4); text-align: center;">
+                📱 Buka &amp; Simpan E-Kupon di Web
+              </a>
+              <p style="margin: 10px 0 0 0; font-size: 11px; color: #8e9c90;">
+                Atau akses kapan saja di menu <strong style="color: #ffffff;">"My Coupon"</strong> dengan email &amp; NIK kamu.
+              </p>
+            </td>
+          </tr>
+
+          <!-- IMPORTANT NOTICE -->
+          <tr>
+            <td style="padding-bottom: 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 12px; padding: 16px;">
+                <tr>
+                  <td>
+                    <h4 style="margin: 0 0 6px 0; font-size: 12px; font-weight: 800; color: #fde047;">
+                      ⚠️ Ketentuan Penting:
+                    </h4>
+                    <ul style="margin: 0; padding-left: 18px; font-size: 11px; color: #e2e8e0; line-height: 1.6;">
+                      <li>QR Code hanya dapat di-scan <strong>1 (satu) kali</strong> di pintu masuk acara.</li>
+                      <li>Harap bawa kartu identitas (KTP/Kartu Pelajar/KK) yang sesuai saat penukaran.</li>
+                      <li>Jangan membagikan tangkapan layar (screenshot) QR Code ini ke publik untuk menghindari penyalahgunaan.</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; text-align: center;">
+              <p style="margin: 0; font-size: 12px; font-weight: 700; color: #ffffff;">
+                © 2026 Bhima Night Carnival • SMAN 1 Madiun
+              </p>
+              <p style="margin: 4px 0 0 0; font-size: 11px; color: #8e9c90;">
+                Jl. Mastrip No.19, Mojorejo, Kec. Taman, Kota Madiun, Jawa Timur 63139
+              </p>
+              <p style="margin: 12px 0 0 0; font-size: 11px;">
+                <a href="https://sman1madiun.sch.id/" target="_blank" style="color: #86db99; text-decoration: none; font-weight: 700;">
+                  Website Resmi SMAN 1 Madiun
+                </a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const sendResult = await transporter.sendMail({
+      from: `"Bhima Night Carnival 2026" <${userEmail}>`,
+      to: email,
+      subject: `E-Coupon Resmi (${orderId}) - ${eventName || "Bhima Night Carnival 2026"}`,
+      html: emailHtml,
+      attachments,
+    });
+
+    if (sendResult.accepted && sendResult.accepted.length > 0) {
+      console.log(`✅ E-Coupon email successfully sent to ${email} (Order ID: ${orderId})`);
+      return { success: true };
+    }
+
+    return { success: false, message: "Email not accepted by recipient server" };
   } catch (error) {
-    console.error("Failed to send ticket email:", error);
-    return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    console.error("❌ Failed to send ticket/coupon email:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
+
