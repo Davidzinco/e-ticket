@@ -1,7 +1,4 @@
 import nodemailer from "nodemailer";
-import QRCode from "qrcode";
-import path from "path";
-import fs from "fs";
 import toDate from "@/app/components/utils/toDate";
 
 export interface SendTicketEmailParams {
@@ -85,20 +82,6 @@ export async function sendTicketEmail(
       qrCodes,
     } = params;
 
-    // Generate high-resolution QR PNGs (Base64)
-    const qrImages: string[] = [];
-    for (const code of qrCodes) {
-      const qrImage = await QRCode.toDataURL(code, {
-        width: 440,
-        margin: 2,
-        color: {
-          dark: "#181d18",
-          light: "#ffffff",
-        },
-      });
-      qrImages.push(qrImage);
-    }
-
     const eventTimeStr = formatEventDateTime(eventTimestamp, transactionTime || "15 Desember 2026 • 16:00 WIB");
     const primaryNik = niks[0] || "";
     const totalTickets = qrCodes.length;
@@ -120,6 +103,8 @@ export async function sendTicketEmail(
         const ownerName = names[index] || names[0] || "Pengunjung";
         const ownerNik = maskNik(niks[index] || primaryNik);
         const couponNumber = index + 1;
+
+        const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=6&data=${encodeURIComponent(code)}`;
 
         return `
         <!-- COUPON CARD ${couponNumber} -->
@@ -224,7 +209,7 @@ export async function sendTicketEmail(
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border: 1px solid #dce4da; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                       <tr>
                         <td align="center" style="padding: 10px;">
-                          <img src="cid:qrcode_${couponNumber}" alt="QR Code ${code}" width="220" height="220" style="display: block; border: 0; outline: none; width: 220px; height: 220px; object-fit: contain;" />
+                          <img src="${qrImageUrl}" alt="QR Code ${code}" width="220" height="220" style="display: block; margin: 0 auto; border: 0; outline: none; width: 220px; height: 220px; object-fit: contain;" />
                         </td>
                       </tr>
                     </table>
@@ -249,28 +234,6 @@ export async function sendTicketEmail(
       })
       .join("");
 
-    // Prepare optional banner attachment
-    const attachments: any[] = qrImages.map((img, index) => ({
-      filename: `Coupon_QR_${index + 1}.png`,
-      content: img.split("base64,")[1],
-      encoding: "base64",
-      cid: `qrcode_${index + 1}`,
-    }));
-
-    let bannerCidPresent = false;
-    if (eventImageSrc) {
-      const bannerFilename = eventImageSrc.slice(eventImageSrc.lastIndexOf("/") + 1);
-      const possiblePath = path.join(process.cwd(), "public", "images", "bnc_2025", bannerFilename);
-      if (fs.existsSync(possiblePath)) {
-        attachments.unshift({
-          filename: bannerFilename,
-          path: possiblePath,
-          cid: "banner",
-        });
-        bannerCidPresent = true;
-      }
-    }
-
     const emailHtml = `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="id">
@@ -290,8 +253,8 @@ export async function sendTicketEmail(
           <tr>
             <td align="center" style="padding-bottom: 24px;">
               ${
-                bannerCidPresent
-                  ? `<img src="cid:banner" alt="BNC 2026 Banner" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />`
+                eventImageSrc && eventImageSrc.startsWith("http")
+                  ? `<img src="${eventImageSrc}" alt="BNC 2026 Banner" width="600" style="display: block; width: 100%; max-width: 600px; height: auto; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);" />`
                   : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, #1d3324 0%, #0d1710 100%); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); text-align: center;">
                       <tr>
                         <td style="padding: 28px 20px;">
@@ -398,7 +361,6 @@ export async function sendTicketEmail(
       to: email,
       subject: `E-Coupon Resmi (${orderId}) - ${eventName || "Bhima Night Carnival 2026"}`,
       html: emailHtml,
-      attachments,
     });
 
     if (sendResult.accepted && sendResult.accepted.length > 0) {
