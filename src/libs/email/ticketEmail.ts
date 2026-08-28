@@ -66,8 +66,8 @@ export async function sendTicketEmail(
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: userEmail,
-        pass: passEmail,
+        user: userEmail.trim(),
+        pass: passEmail.replace(/\s+/g, ""),
       },
     });
 
