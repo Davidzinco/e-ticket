@@ -13,7 +13,7 @@ interface ConsolAdminLayoutProps {
 export default function ConsolAdminLayout({
   children,
   title = "Console Admin",
-  subtitle = "Dashboard Pengelolaan E-Tiket BNC 2026",
+  subtitle = "Dashboard Pengelolaan E-Kupon BNC 2026",
 }: ConsolAdminLayoutProps) {
   const pathname = usePathname();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -28,7 +28,7 @@ export default function ConsolAdminLayout({
     },
     {
       href: "/consol_admin/tickets",
-      label: "Data Tiket",
+      label: "Data Kupon",
       icon: "confirmation_number",
     },
     {

@@ -154,12 +154,11 @@ function timingSafeEqual(a: string, b: string): boolean {
  * Verify secret email and NIK combination from /myticket
  */
 export function verifyAdminSecretCredentials(email: string, nik: string): boolean {
-  const secretEmail = (
-    process.env.ADMIN_SECRET_EMAIL || "admin@bnc.smasa.sch.id"
-  ).trim().toLowerCase();
-  const secretNik = (
-    process.env.ADMIN_SECRET_NIK || "3519999999999999"
-  ).trim();
+  const secretEmail = process.env.ADMIN_SECRET_EMAIL?.trim().toLowerCase();
+  const secretNik = process.env.ADMIN_SECRET_NIK?.trim();
+
+  // Must be strictly configured in environment (.env), never use hardcoded credentials
+  if (!secretEmail || !secretNik) return false;
 
   const inputEmail = (email || "").trim().toLowerCase();
   const inputNik = (nik || "").trim();
@@ -176,10 +175,11 @@ export function verifyAdminSecretCredentials(email: string, nik: string): boolea
  * Verify secret access code from /consol_admin
  */
 export function verifyAdminAccessCode(code: string): boolean {
-  const secretCode = (
-    process.env.ADMIN_ACCESS_CODE || "BNC2026-ADMIN-PASS"
-  ).trim();
+  const secretCode = process.env.ADMIN_ACCESS_CODE?.trim();
   const secretCodeHash = process.env.ADMIN_ACCESS_CODE_HASH?.trim();
+
+  // Must be strictly configured in environment (.env), never use hardcoded credentials
+  if (!secretCode && !secretCodeHash) return false;
 
   const inputCode = (code || "").trim();
   if (!inputCode) return false;
@@ -193,7 +193,11 @@ export function verifyAdminAccessCode(code: string): boolean {
   }
 
   // Direct code match (timing safe)
-  return timingSafeEqual(inputCode, secretCode);
+  if (secretCode) {
+    return timingSafeEqual(inputCode, secretCode);
+  }
+
+  return false;
 }
 
 /**

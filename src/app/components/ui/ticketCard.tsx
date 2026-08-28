@@ -48,7 +48,7 @@ export default function TicketCard({ ticket, index = 0, totalTickets = 1 }: Tick
     if (!qrDataUrl) return;
     const a = document.createElement("a");
     a.href = qrDataUrl;
-    a.download = `Ticket_${ticket.name.replace(/\s+/g, "_")}_${ticket.qr_code}.png`;
+    a.download = `Coupon_${ticket.name.replace(/\s+/g, "_")}_${ticket.qr_code}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -65,11 +65,11 @@ export default function TicketCard({ ticket, index = 0, totalTickets = 1 }: Tick
               className="text-[10px] font-extrabold uppercase tracking-wider block"
               style={{ color: "rgb(56, 105, 72)" }}
             >
-              Official E-Ticket
+              Official E-Coupon
             </span>
             {totalTickets > 1 && (
               <span className="text-[10px] bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-bold">
-                Tiket {index + 1} dari {totalTickets}
+                Kupon {index + 1} dari {totalTickets}
               </span>
             )}
           </div>
@@ -103,7 +103,7 @@ export default function TicketCard({ ticket, index = 0, totalTickets = 1 }: Tick
       {/* Ticket Details Grid */}
       <div className="grid grid-cols-2 gap-3 text-xs mb-5">
         <div>
-          <span className="text-[10px] text-on-surface-variant block">Nama Pemilik Tiket</span>
+          <span className="text-[10px] text-on-surface-variant block">Nama Pemilik Kupon</span>
           <span className="font-bold text-on-surface text-sm">{ticket.name}</span>
         </div>
         <div>
@@ -160,7 +160,7 @@ export default function TicketCard({ ticket, index = 0, totalTickets = 1 }: Tick
           onClick={handleDownloadQr}
           className="mt-3 py-2 px-4 bg-surface border border-outline-variant text-on-surface rounded-lg font-bold text-xs hover:bg-surface-container-high transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
         >
-          <span className="material-symbols-outlined text-sm">download</span> Unduh QR Tiket Ini
+          <span className="material-symbols-outlined text-sm">download</span> Unduh QR Kupon Ini
         </button>
       </div>
 

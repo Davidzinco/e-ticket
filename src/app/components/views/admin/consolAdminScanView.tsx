@@ -67,9 +67,9 @@ export default function ConsolAdminScanView() {
         if (data.message === "Scanned") {
           // Already scanned before
           setScanStatus("already_scanned");
-          setStatusMessage("TIKET SUDAH PERNAH DIGUNAKAN");
+          setStatusMessage("KUPON SUDAH PERNAH DIGUNAKAN");
           playBeep("warning");
-          toast.warning("Tiket ini sudah pernah masuk sebelumnya!");
+          toast.warning("Kupon ini sudah pernah masuk sebelumnya!");
           setScanHistory((prev) => [
             {
               code,
@@ -82,9 +82,9 @@ export default function ConsolAdminScanView() {
         } else {
           // Valid unscanned ticket -> successfully scanned!
           setScanStatus("valid");
-          setStatusMessage("TIKET VALID - SILAKAN MASUK");
+          setStatusMessage("KUPON VALID - SILAKAN MASUK");
           playBeep("success");
-          toast.success("Tiket Valid! Pengunjung dipersilakan masuk.");
+          toast.success("Kupon Valid! Pengunjung dipersilakan masuk.");
           setScanHistory((prev) => [
             {
               code,
@@ -97,10 +97,10 @@ export default function ConsolAdminScanView() {
         }
       } else {
         setScanStatus("invalid");
-        setStatusMessage(data.message || "BARCODE TIDAK DITEMUKAN");
+        setStatusMessage(data.message || "KUPON TIDAK DITEMUKAN");
         setTicketResult(null);
         playBeep("error");
-        toast.error(data.message || "Tiket tidak terdaftar di sistem.");
+        toast.error(data.message || "Kupon tidak terdaftar di sistem.");
         setScanHistory((prev) => [
           {
             code,
@@ -116,7 +116,7 @@ export default function ConsolAdminScanView() {
       setScanStatus("invalid");
       setStatusMessage("KENDALA KONEKSI SERVER");
       playBeep("error");
-      toast.error("Gagal memverifikasi tiket ke server.");
+      toast.error("Gagal memverifikasi kupon ke server.");
     } finally {
       setIsProcessing(false);
     }
@@ -317,7 +317,7 @@ export default function ConsolAdminScanView() {
 
           {/* Manual Code Input */}
           <div className="bg-surface rounded-2xl border border-outline-variant p-4 sm:p-5 ambient-shadow space-y-3">
-            <h4 className="font-extrabold text-xs text-on-surface">Input Manual Kode Tiket</h4>
+            <h4 className="font-extrabold text-xs text-on-surface">Input Manual Kode Kupon</h4>
             <form onSubmit={handleManualSubmit} className="flex gap-2">
               <input
                 type="text"
@@ -346,7 +346,7 @@ export default function ConsolAdminScanView() {
               <span className="material-symbols-outlined text-primary" style={{ color: "rgb(56, 105, 72)" }}>
                 badge
               </span>
-              <span>Informasi E-Tiket Terbaca</span>
+              <span>Informasi E-Kupon Terbaca</span>
             </h3>
 
             <div className="bg-surface-container-low p-4 rounded-2xl space-y-2.5 text-xs">
@@ -424,7 +424,7 @@ export default function ConsolAdminScanView() {
               </div>
             ) : (
               <p className="text-xs text-on-surface-variant py-4 text-center">
-                Belum ada riwayat pemindaian tiket pada sesi ini.
+                Belum ada riwayat pemindaian kupon pada sesi ini.
               </p>
             )}
           </div>

@@ -63,10 +63,10 @@ export default function ConsolAdminDashboardView() {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1: Total Tiket Terbit */}
+        {/* Metric 1: Total Kupon Terbit */}
         <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-on-surface-variant">Total Tiket Terjual</span>
+            <span className="text-xs font-bold text-on-surface-variant">Total Kupon Terjual</span>
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: "rgba(56, 105, 72, 0.1)", color: "rgb(56, 105, 72)" }}
@@ -99,7 +99,7 @@ export default function ConsolAdminDashboardView() {
                 : `Rp ${(stats?.totalRevenue ?? 0).toLocaleString("id-ID")}`}
             </h3>
             <p className="text-[11px] text-on-surface-variant mt-1">
-              Dari tiket lunas terverifikasi
+              Dari kupon lunas terverifikasi
             </p>
           </div>
         </div>
@@ -117,15 +117,15 @@ export default function ConsolAdminDashboardView() {
               {isLoading ? "..." : stats?.scannedCount ?? 0}
             </h3>
             <p className="text-[11px] text-on-surface-variant mt-1">
-              Belum Scan: <strong>{stats?.unscannedCount ?? 0}</strong> tiket
+              Belum Scan: <strong>{stats?.unscannedCount ?? 0}</strong> kupon
             </p>
           </div>
         </div>
 
-        {/* Metric 4: Sisa Kuota Tiket */}
+        {/* Metric 4: Sisa Kuota Kupon */}
         <div className="bg-surface rounded-2xl border border-outline-variant p-5 ambient-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-on-surface-variant">Sisa Kuota Total</span>
+            <span className="text-xs font-bold text-on-surface-variant">Sisa Kuota Kupon Total</span>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <span className="material-symbols-outlined text-xl">inventory_2</span>
             </div>
@@ -162,12 +162,12 @@ export default function ConsolAdminDashboardView() {
               Buka Scanner Gate
             </h4>
             <p className="text-xs text-on-surface-variant mt-1">
-              Validasi tiket pengunjung secara langsung di gerbang masuk via kamera HP atau webcam.
+              Validasi kupon pengunjung secara langsung di gerbang masuk via kamera HP atau webcam.
             </p>
           </div>
         </Link>
 
-        {/* Action 2: Kelola Tiket */}
+        {/* Action 2: Kelola Kupon */}
         <Link
           href="/consol_admin/tickets"
           className="bg-surface hover:bg-surface-container rounded-2xl border border-outline-variant p-5 ambient-shadow transition-all group flex items-start gap-4"
@@ -177,10 +177,10 @@ export default function ConsolAdminDashboardView() {
           </div>
           <div>
             <h4 className="font-extrabold text-sm text-on-surface group-hover:text-blue-600 transition-colors">
-              Lihat Seluruh Tiket
+              Lihat Seluruh Kupon
             </h4>
             <p className="text-xs text-on-surface-variant mt-1">
-              Cari data pemilik tiket berdasarkan Nama, NIK, Email, atau Kode QR tiket.
+              Cari data pemilik kupon berdasarkan Nama, NIK, Email, atau Kode QR kupon.
             </p>
           </div>
         </Link>
@@ -208,8 +208,8 @@ export default function ConsolAdminDashboardView() {
       <div className="bg-surface rounded-2xl border border-outline-variant p-6 ambient-shadow space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-extrabold text-base text-on-surface">Tiket Terbaru Diterbitkan</h3>
-            <p className="text-xs text-on-surface-variant">Daftar transaksi tiket terakhir yang masuk ke database.</p>
+            <h3 className="font-extrabold text-base text-on-surface">Kupon Terbaru Diterbitkan</h3>
+            <p className="text-xs text-on-surface-variant">Daftar transaksi kupon terakhir yang masuk ke database.</p>
           </div>
           <button
             onClick={fetchStats}
@@ -223,7 +223,7 @@ export default function ConsolAdminDashboardView() {
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center text-on-surface-variant space-y-2">
             <span className="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
-            <p className="text-xs">Memuat data tiket...</p>
+            <p className="text-xs">Memuat data kupon...</p>
           </div>
         ) : error ? (
           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs">
@@ -236,7 +236,7 @@ export default function ConsolAdminDashboardView() {
                 <tr className="border-b border-outline-variant text-on-surface-variant">
                   <th className="py-3 px-3 font-bold">Nama Pembeli</th>
                   <th className="py-3 px-3 font-bold">Email</th>
-                  <th className="py-3 px-3 font-bold">Kode Tiket</th>
+                  <th className="py-3 px-3 font-bold">Kode Kupon</th>
                   <th className="py-3 px-3 font-bold">Kategori</th>
                   <th className="py-3 px-3 font-bold text-center">Status Scan</th>
                 </tr>
@@ -266,7 +266,7 @@ export default function ConsolAdminDashboardView() {
           </div>
         ) : (
           <div className="py-8 text-center text-on-surface-variant text-xs">
-            Belum ada transaksi tiket yang tercatat.
+            Belum ada transaksi kupon yang tercatat.
           </div>
         )}
       </div>

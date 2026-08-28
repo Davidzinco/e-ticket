@@ -74,7 +74,7 @@ export default function ConsolAdminOrdersView() {
                       {Array.isArray(o.name) ? o.name.join(", ") : o.name || "-"}
                     </td>
                     <td className="py-3 px-3 text-on-surface-variant">{o.email || "-"}</td>
-                    <td className="py-3 px-3 font-bold">{o.ticket || 1} Tiket</td>
+                    <td className="py-3 px-3 font-bold">{o.ticket || 1} Kupon</td>
                     <td className="py-3 px-3 text-center">
                       <span
                         className={`inline-block py-0.5 px-2.5 rounded-full text-[10px] font-bold ${

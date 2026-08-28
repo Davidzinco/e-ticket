@@ -13,8 +13,8 @@ export default function Header({
   const handleShare = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const shareData = {
-      title: "Bhima Night Carnival 2026 - E-Ticket",
-      text: "Dapatkan tiket resmi Bhima Night Carnival (BNC) sekarang!",
+      title: "Bhima Night Carnival 2026 - E-Coupon",
+      text: "Dapatkan kupon resmi Bhima Night Carnival (BNC) sekarang!",
       url,
     };
 

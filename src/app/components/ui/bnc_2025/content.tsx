@@ -106,7 +106,7 @@ export default function Content({
                   festival
                 </span>
                 <span className="font-bold text-[10px] uppercase tracking-wider">
-                  {currentEvent?.sub_title || "Official E-Ticket Platform"}
+                  {currentEvent?.sub_title || "Official E-Coupon Platform"}
                 </span>
               </div>
               <h1 className="text-2xl md:text-4xl font-extrabold text-on-surface mb-2 tracking-tight">
@@ -195,7 +195,7 @@ export default function Content({
                   Tentang Acara
                 </h3>
                 <p className="text-sm text-on-surface-variant leading-relaxed">
-                  Festival Bhima Night Carnival menghadirkan pertunjukan seni akbar, kolaborasi musik, dan kehangatan kebersamaan keluarga besar SMA Negeri 1 Madiun. Beli tiket sekarang untuk menikmati pengalaman luar biasa!
+                  Festival Bhima Night Carnival menghadirkan pertunjukan seni akbar, kolaborasi musik, dan kehangatan kebersamaan keluarga besar SMA Negeri 1 Madiun. Beli kupon sekarang untuk menikmati pengalaman luar biasa!
                 </p>
               </section>
 
@@ -204,7 +204,7 @@ export default function Content({
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                   <div className="flex flex-col w-full md:w-auto text-center md:text-left">
                     <span className="text-xs text-on-surface-variant font-medium">
-                      Harga tiket mulai dari
+                      Harga kupon mulai dari
                     </span>
                     <span
                       className="text-2xl font-extrabold text-primary"
@@ -226,7 +226,7 @@ export default function Content({
                       !isSoldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}
                     }
                   >
-                    <span>{isSoldOut ? "Tiket Habis" : "Pilih Tiket"}</span>
+                    <span>{isSoldOut ? "Kupon Habis" : "Pilih Kupon"}</span>
                     <span
                       className="material-symbols-outlined"
                       style={{ fontVariationSettings: "'FILL' 1" }}
@@ -267,7 +267,7 @@ export default function Content({
                 !isSoldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}
               }
             >
-              <span>{isSoldOut ? "Habis" : "Pilih Tiket"}</span>
+              <span>{isSoldOut ? "Habis" : "Pilih Kupon"}</span>
               <span
                 className="material-symbols-outlined text-sm sm:text-base"
                 style={{ fontVariationSettings: "'FILL' 1" }}

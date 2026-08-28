@@ -11,12 +11,12 @@ export default function Counter({
 }) {
   const handleUp = () => {
     if (count >= maxCount)
-      return toast.info("Pembelian tiket sudah mencapai batas");
+      return toast.info("Pembelian kupon sudah mencapai batas");
 
     if (count < maxCount) setCount(count + 1);
   };
   const handleDown = () => {
-    if (count <= 1) return toast.error("Minimal pembelian adalah 1 tiket");
+    if (count <= 1) return toast.error("Minimal pembelian adalah 1 kupon");
 
     if (count > 1) setCount(count - 1);
   };

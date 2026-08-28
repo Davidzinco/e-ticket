@@ -122,12 +122,10 @@ PAYMENT_BYPASS=false              # true = terbitkan tiket langsung tanpa memang
 ### Dua Jalur Masuk Admin
 
 1. **Via `/myticket` (Backdoor)**:
-   - Input email rahasia + NIK → set cookie `bnc_admin_session` → redirect ke `/consol_admin`
-   - Default: `admin@bnc.smasa.sch.id` + `3519999999999999`
+   - Input email rahasia + NIK (dari `.env`) → set cookie `bnc_admin_session` → redirect ke `/consol_admin`
 
 2. **Via `/consol_admin` (Access Code)**:
-   - Input kode akses → set cookie `bnc_admin_session`
-   - Default: `BNC2026-ADMIN-PASS`
+   - Input kode akses (dari `.env`) → set cookie `bnc_admin_session`
    - Rate limiting: max 5 percobaan gagal, lockout 15 menit per IP
 
 ### Session Cookie
@@ -136,12 +134,12 @@ PAYMENT_BYPASS=false              # true = terbitkan tiket langsung tanpa memang
 - Token: HMAC-SHA256 signed (`src/libs/adminAuth.ts`)
 - Edge validator: `src/libs/adminAuthEdge.ts` (tanpa `node:crypto`, kompatibel Edge Runtime)
 
-### Environment Variables Admin
+### Environment Variables Admin (Tersimpan aman di `.env`, tidak ada hardcoded di kode)
 ```env
-ADMIN_SECRET_EMAIL=admin@bnc.smasa.sch.id
-ADMIN_SECRET_NIK=3519999999999999
-ADMIN_ACCESS_CODE=BNC2026-ADMIN-PASS
-ADMIN_SESSION_SECRET=bnc_admin_secret_session_key_2026
+ADMIN_SECRET_EMAIL=<your-private-admin-email>
+ADMIN_SECRET_NIK=<your-private-admin-nik>
+ADMIN_ACCESS_CODE=<your-private-access-code>
+ADMIN_SESSION_SECRET=<your-random-session-secret>
 ```
 
 ---

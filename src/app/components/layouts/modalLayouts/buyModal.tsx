@@ -113,11 +113,11 @@ export default function BuyModal({
     e.preventDefault();
 
     if (isPackageSoldOut) {
-      return toast.error(`Tiket paket ${selectedPackage.name} sudah habis!`);
+      return toast.error(`Kupon paket ${selectedPackage.name} sudah habis!`);
     }
 
     if (ticketQuantity > availableStock) {
-      return toast.error(`Maksimal pembelian untuk ${selectedPackage.name} adalah ${availableStock} tiket`);
+      return toast.error(`Maksimal pembelian untuk ${selectedPackage.name} adalah ${availableStock} kupon`);
     }
 
     setIsLoading(true);
@@ -215,7 +215,7 @@ export default function BuyModal({
       {/* Header */}
       <div className="flex items-center justify-between p-5 sm:p-6 border-b border-outline-variant bg-surface-container-lowest">
         <div>
-          <h3 className="text-lg sm:text-xl font-extrabold text-on-surface">Pemesanan Tiket</h3>
+          <h3 className="text-lg sm:text-xl font-extrabold text-on-surface">Pemesanan Kupon</h3>
           <p className="text-xs text-on-surface-variant font-medium mt-0.5">
             {event?.title || "Bhima Night Carnival"} • SMAN 1 Madiun
           </p>
@@ -231,10 +231,10 @@ export default function BuyModal({
 
       {/* Form & Selection Content */}
       <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[75dvh] overflow-y-auto">
-        {/* Pilihan Paket Tiket dari Firebase */}
+        {/* Pilihan Paket Kupon dari Firebase */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-on-surface uppercase tracking-wider block">
-            Pilih Paket / Tipe Tiket
+            Pilih Paket / Tipe Kupon
           </label>
           <div className="grid grid-cols-1 gap-2.5">
             {availablePackages.map((pkg) => {
@@ -285,14 +285,14 @@ export default function BuyModal({
                           {pkg.description}
                         </p>
                       )}
-                      {/* Tampilkan badge hanya jika tiket benar-benar habis */}
+                      {/* Tampilkan badge hanya jika kupon benar-benar habis */}
                       {isSoldOut && (
                         <div className="pt-0.5">
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-100 text-red-700">
                             <span className="material-symbols-outlined text-[12px]">
                               cancel
                             </span>
-                            Tiket Habis
+                            Kupon Habis
                           </span>
                         </div>
                       )}
@@ -306,7 +306,7 @@ export default function BuyModal({
                       Rp {Number(pkg.price || 0).toLocaleString("id-ID")}
                     </span>
                     <span className="text-[10px] text-on-surface-variant">
-                      / tiket
+                      / kupon
                     </span>
                   </div>
                 </button>
@@ -318,10 +318,10 @@ export default function BuyModal({
         {/* Quantity Selector */}
         <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
           <div>
-            <span className="font-bold text-sm text-on-surface block">Jumlah Tiket</span>
+            <span className="font-bold text-sm text-on-surface block">Jumlah Kupon</span>
             {isPackageSoldOut && (
               <span className="text-xs text-red-600 font-medium">
-                Tiket {selectedPackage.name} telah habis
+                Kupon {selectedPackage.name} telah habis
               </span>
             )}
           </div>
@@ -414,7 +414,7 @@ export default function BuyModal({
             {/* Email Aktif */}
             <div>
               <label htmlFor="email" className="block text-xs font-bold text-on-surface mb-1">
-                Email Aktif (Pengiriman E-Tiket QR)
+                Email Aktif (Pengiriman E-Kupon QR)
               </label>
               <input
                 type="email"
@@ -431,7 +431,7 @@ export default function BuyModal({
         {/* Rincian Biaya Summary */}
         <div className="bg-surface-container-low p-4 rounded-xl space-y-1.5 text-xs">
           <div className="flex justify-between text-on-surface-variant">
-            <span>{ticketQuantity}x Tiket {selectedPackage.name}</span>
+            <span>{ticketQuantity}x Kupon {selectedPackage.name}</span>
             <span>Rp {totalAmount.toLocaleString("id-ID")}</span>
           </div>
           <div className="flex justify-between text-on-surface pt-2 border-t border-outline-variant font-bold text-sm">
@@ -454,7 +454,7 @@ export default function BuyModal({
               {isLoading
                 ? "Menghubungkan ke DOKU..."
                 : isPackageSoldOut
-                ? `Tiket ${selectedPackage.name} Habis`
+                ? `Kupon ${selectedPackage.name} Habis`
                 : "Bayar Sekarang via DOKU / QRIS"}
             </span>
             {!isPackageSoldOut && (

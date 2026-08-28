@@ -16,7 +16,7 @@ export default async function ScanGatePage() {
   return (
     <ConsolAdminLayout
       title="Scanner Gate"
-      subtitle="Validasi Tiket Pengunjung di Pintu Masuk BNC 2026"
+      subtitle="Validasi Kupon Pengunjung di Pintu Masuk BNC 2026"
     >
       <ConsolAdminScanView />
     </ConsolAdminLayout>

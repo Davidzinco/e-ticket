@@ -163,7 +163,7 @@ function SuccessContent() {
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
-      <Header title="Official E-Ticket" currentView="myticket" />
+      <Header title="Official E-Coupon" currentView="myticket" />
 
       <main className="flex-grow container mx-auto max-w-2xl px-4 sm:px-6 py-6 flex flex-col gap-6 pt-20 pb-28">
         {/* Step Progress Indicator */}
@@ -201,7 +201,7 @@ function SuccessContent() {
             >
               3
             </div>
-            <span className="ml-2 font-bold text-xs hidden sm:inline text-on-surface">E-Tiket</span>
+            <span className="ml-2 font-bold text-xs hidden sm:inline text-on-surface">E-Kupon</span>
           </div>
         </div>
 
@@ -216,10 +216,10 @@ function SuccessContent() {
             </div>
             <div>
               <h2 className="text-xl font-extrabold text-on-surface">
-                Memverifikasi Pembayaran & Tiket...
+                Memverifikasi Pembayaran & Kupon...
               </h2>
               <p className="text-xs text-on-surface-variant mt-1 max-w-md">
-                Sistem sedang memeriksa status transaksi dan mengambil data tiket dari database.
+                Sistem sedang memeriksa status transaksi dan mengambil data kupon dari database.
               </p>
             </div>
           </div>
@@ -241,7 +241,7 @@ function SuccessContent() {
                   Pembayaran Berhasil!
                 </h2>
                 <p className="text-xs md:text-sm text-on-surface-variant mt-1">
-                  Transaksi Anda terverifikasi lunas. Berikut e-tiket resmi Anda:
+                  Transaksi Anda terverifikasi lunas. Berikut e-kupon resmi Anda:
                 </p>
               </div>
             </div>
@@ -267,13 +267,13 @@ function SuccessContent() {
                   className="py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-md"
                   style={{ backgroundColor: "rgb(56, 105, 72)" }}
                 >
-                  <span className="material-symbols-outlined text-sm">print</span> Cetak / Unduh E-Tiket
+                  <span className="material-symbols-outlined text-sm">print</span> Cetak / Unduh E-Kupon
                 </button>
                 <Link
                   href="/myticket"
                   className="py-3 px-4 border border-outline-variant text-on-surface rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-surface-container transition-all text-center"
                 >
-                  <span className="material-symbols-outlined text-sm">confirmation_number</span> Lihat di "Tiket Saya"
+                  <span className="material-symbols-outlined text-sm">confirmation_number</span> Lihat di "Kupon Saya"
                 </Link>
               </div>
 
@@ -298,10 +298,10 @@ function SuccessContent() {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-extrabold text-on-surface">
-                Pembayaran Diterima! Tiket Sedang Diproses...
+                Pembayaran Diterima! Kupon Sedang Diproses...
               </h2>
               <p className="text-xs text-on-surface-variant mt-2 max-w-md">
-                Pembayaran Anda sudah terverifikasi. Sistem sedang menerbitkan e-tiket dan kode QR resmi untuk Anda.
+                Pembayaran Anda sudah terverifikasi. Sistem sedang menerbitkan e-kupon dan kode QR resmi untuk Anda.
               </p>
             </div>
 
@@ -319,13 +319,13 @@ function SuccessContent() {
                 className="flex-1 py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all cursor-pointer shadow-md"
                 style={{ backgroundColor: "rgb(56, 105, 72)" }}
               >
-                <span className="material-symbols-outlined text-sm">refresh</span> Coba Muat Ulang Tiket
+                <span className="material-symbols-outlined text-sm">refresh</span> Coba Muat Ulang Kupon
               </button>
               <Link
                 href="/myticket"
                 className="flex-1 py-3 px-4 border border-outline-variant text-on-surface rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-surface-container text-center"
               >
-                Cek di "Tiket Saya"
+                Cek di "Kupon Saya"
               </Link>
             </div>
           </div>
@@ -414,7 +414,7 @@ function SuccessContent() {
                 className="flex-1 py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all text-center shadow-md"
                 style={{ backgroundColor: "rgb(56, 105, 72)" }}
               >
-                <span className="material-symbols-outlined text-sm">search</span> Cari Tiket di "Tiket Saya"
+                <span className="material-symbols-outlined text-sm">search</span> Cari Kupon di "Kupon Saya"
               </Link>
               <Link
                 href="/"

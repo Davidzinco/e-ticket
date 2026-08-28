@@ -24,7 +24,7 @@ export default function ConsolAdminTicketsView() {
       if (res.ok && json.success) {
         setTickets(json.data || []);
       } else {
-        toast.error(json.message || "Gagal memuat tiket.");
+        toast.error(json.message || "Gagal memuat kupon.");
       }
     } catch {
       toast.error("Gagal terhubung ke server.");
@@ -95,14 +95,14 @@ export default function ConsolAdminTicketsView() {
       <div className="bg-surface rounded-2xl border border-outline-variant p-5 sm:p-6 ambient-shadow space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-sm sm:text-base text-on-surface">
-            Data E-Tiket ({tickets.length} Tiket)
+            Data E-Kupon ({tickets.length} Kupon)
           </h3>
         </div>
 
         {isLoading ? (
           <div className="py-16 flex flex-col items-center justify-center text-on-surface-variant space-y-2">
             <span className="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
-            <p className="text-xs">Memuat data tiket...</p>
+            <p className="text-xs">Memuat data kupon...</p>
           </div>
         ) : tickets.length > 0 ? (
           <div className="overflow-x-auto">
@@ -113,7 +113,7 @@ export default function ConsolAdminTicketsView() {
                   <th className="py-3 px-3 font-bold">Nama Pemilik</th>
                   <th className="py-3 px-3 font-bold">NIK</th>
                   <th className="py-3 px-3 font-bold">Email</th>
-                  <th className="py-3 px-3 font-bold">Kode Tiket</th>
+                  <th className="py-3 px-3 font-bold">Kode Kupon</th>
                   <th className="py-3 px-3 font-bold text-center">Status</th>
                   <th className="py-3 px-3 font-bold text-center">Aksi</th>
                 </tr>
@@ -154,7 +154,7 @@ export default function ConsolAdminTicketsView() {
           </div>
         ) : (
           <div className="py-12 text-center text-on-surface-variant text-xs">
-            Tidak ada tiket yang cocok dengan filter pencarian.
+            Tidak ada kupon yang cocok dengan filter pencarian.
           </div>
         )}
       </div>
@@ -165,7 +165,7 @@ export default function ConsolAdminTicketsView() {
           <div className="bg-surface rounded-3xl border border-outline-variant max-w-md w-full p-6 space-y-5 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-outline-variant pb-3">
               <div>
-                <h3 className="font-extrabold text-base text-on-surface">Detail E-Tiket</h3>
+                <h3 className="font-extrabold text-base text-on-surface">Detail E-Kupon</h3>
                 <p className="text-xs text-on-surface-variant">Order: #{selectedTicket.order_id || "-"}</p>
               </div>
               <button
@@ -204,7 +204,7 @@ export default function ConsolAdminTicketsView() {
                 <span className="font-bold text-on-surface">{selectedTicket.event_name || "BNC 2026"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-on-surface-variant">Kode Tiket:</span>
+                <span className="text-on-surface-variant">Kode Kupon:</span>
                 <span className="font-mono font-bold text-primary" style={{ color: "rgb(56, 105, 72)" }}>
                   {selectedTicket.qr_code}
                 </span>

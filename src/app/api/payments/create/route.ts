@@ -209,19 +209,39 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Call DOKU Checkout API (Performed OUTSIDE Firestore transaction)
-    const returnUrlEnv = process.env.DOKU_RETURN_URL;
-    let callbackUrl = "";
-    if (returnUrlEnv && returnUrlEnv.trim() !== "") {
-      const cleanUrl = returnUrlEnv.trim().replace(/\/+$/, "");
-      callbackUrl = cleanUrl.endsWith("/success")
-        ? `${cleanUrl}?order_id=${encodeURIComponent(orderId)}`
-        : `${cleanUrl}/success?order_id=${encodeURIComponent(orderId)}`;
+    // Dynamically resolve base URL to ensure users on deployed environments are redirected back to the deployed URL, not localhost
+    const originHeader = req.headers.get("origin");
+    const forwardedHost = req.headers.get("x-forwarded-host");
+    const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+    const hostHeader = req.headers.get("host");
+
+    let appBaseUrl = "";
+    const returnUrlEnv = process.env.DOKU_RETURN_URL?.trim();
+
+    if (returnUrlEnv && !returnUrlEnv.includes("localhost")) {
+      appBaseUrl = returnUrlEnv.replace(/\/+$/, "");
+    } else if (originHeader && !originHeader.includes("localhost")) {
+      appBaseUrl = originHeader.trim().replace(/\/+$/, "");
+    } else if (forwardedHost && !forwardedHost.includes("localhost")) {
+      appBaseUrl = `${forwardedProto}://${forwardedHost}`.trim().replace(/\/+$/, "");
+    } else if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes("localhost")) {
+      appBaseUrl = process.env.NEXTAUTH_URL.trim().replace(/\/+$/, "");
+    } else if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+      appBaseUrl = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.trim().replace(/\/+$/, "");
+    } else if (process.env.VERCEL_URL) {
+      appBaseUrl = `https://${process.env.VERCEL_URL}`.trim().replace(/\/+$/, "");
+    } else if (originHeader) {
+      appBaseUrl = originHeader.trim().replace(/\/+$/, "");
+    } else if (hostHeader) {
+      const proto = req.nextUrl.protocol || (forwardedProto ? `${forwardedProto}:` : "http:");
+      appBaseUrl = `${proto}//${hostHeader}`.trim().replace(/\/+$/, "");
     } else {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_NEXTAUTH_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-      callbackUrl = `${baseUrl.replace(/\/+$/, "")}/success?order_id=${encodeURIComponent(orderId)}`;
+      appBaseUrl = req.nextUrl.origin.trim().replace(/\/+$/, "");
     }
+
+    const callbackUrl = appBaseUrl.endsWith("/success")
+      ? `${appBaseUrl}?order_id=${encodeURIComponent(orderId)}`
+      : `${appBaseUrl}/success?order_id=${encodeURIComponent(orderId)}`;
 
     try {
       const dokuResult = await createCheckoutTransaction({

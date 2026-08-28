@@ -46,7 +46,7 @@ export default function EventCard({
           {soldOut && (
             <div className="absolute inset-0 bg-surface/85 backdrop-blur-xs flex flex-col justify-center items-center z-20">
               <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-600 font-bold text-xs tracking-wider uppercase border border-red-500/30">
-                Tiket Habis
+                Kupon Habis
               </span>
             </div>
           )}
@@ -79,7 +79,7 @@ export default function EventCard({
                     : "bg-primary-container text-on-primary-container border border-outline-variant"
                 }`}
               >
-                {soldOut ? "Habis" : `${ticket} Tiket`}
+                {soldOut ? "Habis" : `${ticket} Kupon`}
               </span>
             )}
           </div>
@@ -100,7 +100,7 @@ export default function EventCard({
       {/* Ticket Action Footer */}
       <div className="px-5 py-3 border-t border-dashed border-outline-variant bg-surface-container-low flex items-center justify-between">
         <span className="text-xs font-bold text-on-surface">
-          Detail &amp; Tiket
+          Detail &amp; Kupon
         </span>
         <button
           onClick={(e) => {
@@ -114,7 +114,7 @@ export default function EventCard({
           }`}
           style={!soldOut ? { backgroundColor: "rgb(56, 105, 72)" } : {}}
         >
-          <span>{soldOut ? "Habis" : "Beli Tiket"}</span>
+          <span>{soldOut ? "Habis" : "Beli Kupon"}</span>
           <span>→</span>
         </button>
       </div>

@@ -31,7 +31,7 @@ export default function Bnc2025View({
         <div className="max-w-md p-8 rounded-2xl bg-surface/90 backdrop-blur-md border border-outline-variant shadow-lg">
           <h2 className="font-bold text-lg text-on-surface mb-2">Gagal Memuat Acara</h2>
           <p className="text-on-surface-variant text-xs mb-6">
-            Terjadi kendala saat menghubungkan ke sistem tiket.
+            Terjadi kendala saat menghubungkan ke sistem kupon.
           </p>
           <a
             href="/"
@@ -68,7 +68,7 @@ export default function Bnc2025View({
         <p className="font-bold text-on-surface">
           © 2026 <span className="text-primary font-bold" style={{ color: "rgb(56, 105, 72)" }}>Bhima Night Carnival</span> • SMAN 1 Madiun
         </p>
-        <p className="text-[11px] text-on-surface-variant mt-1">Platform Pemesanan Tiket Resmi</p>
+        <p className="text-[11px] text-on-surface-variant mt-1">Platform Pemesanan Kupon Resmi</p>
       </footer>
       <BottomNav activeTab="info" />
     </div>

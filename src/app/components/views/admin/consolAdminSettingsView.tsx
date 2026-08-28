@@ -96,7 +96,7 @@ export default function ConsolAdminSettingsView() {
               style={{ backgroundColor: "rgb(56, 105, 72)" }}
             >
               <span className="material-symbols-outlined text-base">sync</span>
-              <span>Sinkronkan Seluruh Tiket Database ke Spreadsheet</span>
+              <span>Sinkronkan Seluruh Kupon Database ke Spreadsheet</span>
             </button>
           </div>
 
@@ -141,10 +141,10 @@ export default function ConsolAdminSettingsView() {
         <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant text-xs space-y-2">
           <p className="font-bold text-on-surface">Kustomisasi Kredensial Admin di .env:</p>
           <div className="font-mono text-[11px] bg-background p-3 rounded-lg border border-outline-variant text-on-surface overflow-x-auto space-y-1">
-            <p>ADMIN_SECRET_EMAIL="admin@bnc.smasa.sch.id"</p>
-            <p>ADMIN_SECRET_NIK="3519999999999999"</p>
-            <p>ADMIN_ACCESS_CODE="BNC2026-ADMIN-PASS"</p>
-            <p>ADMIN_SESSION_SECRET="rahasia_kunci_sesi_admin_anda"</p>
+            <p>ADMIN_SECRET_EMAIL="your-admin-email@domain.com"</p>
+            <p>ADMIN_SECRET_NIK="your-secret-nik-number"</p>
+            <p>ADMIN_ACCESS_CODE="your-strong-access-code"</p>
+            <p>ADMIN_SESSION_SECRET="your-strong-random-session-secret"</p>
           </div>
         </div>
       </div>

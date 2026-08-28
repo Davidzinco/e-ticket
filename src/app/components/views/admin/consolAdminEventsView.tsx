@@ -67,7 +67,7 @@ export default function ConsolAdminEventsView() {
                 Rp {(eventData?.price_festival || eventData?.price || 56000).toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-on-surface-variant">
-                Sisa Kuota: <strong>{eventData?.ticket_festival ?? 500}</strong> tiket
+                Sisa Kuota: <strong>{eventData?.ticket_festival ?? 500}</strong> kupon
               </p>
             </div>
 
@@ -83,7 +83,7 @@ export default function ConsolAdminEventsView() {
                 Rp {(eventData?.price_vip || 140000).toLocaleString("id-ID")}
               </div>
               <p className="text-xs text-on-surface-variant">
-                Sisa Kuota: <strong>{eventData?.ticket_vip ?? 100}</strong> tiket
+                Sisa Kuota: <strong>{eventData?.ticket_vip ?? 100}</strong> kupon
               </p>
             </div>
           </div>

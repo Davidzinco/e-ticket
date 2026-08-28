@@ -55,7 +55,7 @@ function MyTicketContent() {
             JSON.stringify({ email: userEmail, nik: userNik })
           );
         }
-        toast.success(data.message || "Tiket berhasil ditemukan!");
+        toast.success(data.message || "Kupon berhasil ditemukan!");
       } else if (data.isPending) {
         setIsPendingOrder(true);
         setPendingOrderId(data.orderId || null);
@@ -65,13 +65,13 @@ function MyTicketContent() {
         setTickets(null);
         setErrorMessage(
           data.message ||
-            "Tiket tidak ditemukan. Pastikan email dan NIK yang Anda masukkan sesuai saat pembelian."
+            "Kupon tidak ditemukan. Pastikan email dan NIK yang Anda masukkan sesuai saat pembelian."
         );
-        toast.error(data.message || "Tiket tidak ditemukan.");
+        toast.error(data.message || "Kupon tidak ditemukan.");
       }
     } catch (err) {
       console.error("Fetch tickets error:", err);
-      setErrorMessage("Terjadi kesalahan jaringan saat memuat tiket.");
+      setErrorMessage("Terjadi kesalahan jaringan saat memuat kupon.");
       toast.error("Gagal terhubung ke server.");
     } finally {
       setIsLoading(false);
@@ -125,12 +125,12 @@ function MyTicketContent() {
     setTickets(null);
     setErrorMessage(null);
     setIsPendingOrder(false);
-    toast.info("Anda telah keluar dari sesi tiket.");
+    toast.info("Anda telah keluar dari sesi kupon.");
   };
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col font-sans selection:bg-primary-container selection:text-on-primary-container">
-      <Header title="Official E-Ticket" currentView="myticket" />
+      <Header title="Official E-Coupon" currentView="myticket" />
 
       <main className="flex-grow container mx-auto max-w-2xl px-4 sm:px-6 py-6 flex flex-col gap-6 pt-20 pb-28">
         {/* VIEW 1: LOGIN / LOOKUP FORM */}
@@ -151,11 +151,11 @@ function MyTicketContent() {
                   </span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight">
-                  Akses E-Tiket Kamu
+                  Akses E-Kupon Kamu
                 </h1>
                 <p className="text-xs sm:text-sm text-on-surface-variant mt-1.5 max-w-md">
                   Masukkan <strong>Email</strong> dan <strong>NIK</strong> yang
-                  Anda gunakan saat melakukan pemesanan tiket.
+                  Anda gunakan saat melakukan pemesanan kupon.
                 </p>
               </div>
 
@@ -257,7 +257,7 @@ function MyTicketContent() {
                       <span className="material-symbols-outlined text-lg">
                         search
                       </span>
-                      <span>Lihat Tiket Saya</span>
+                      <span>Lihat Kupon Saya</span>
                     </>
                   )}
                 </button>
@@ -269,8 +269,8 @@ function MyTicketContent() {
                   info
                 </span>
                 <p>
-                  Tiket akan muncul jika pembayaran Anda telah berstatus{" "}
-                  <strong>LUNAS</strong>. Tunjukkan QR Code tiket pada panitia
+                  Kupon akan muncul jika pembayaran Anda telah berstatus{" "}
+                  <strong>LUNAS</strong>. Tunjukkan QR Code kupon pada panitia
                   saat registrasi di lokasi.
                 </p>
               </div>
@@ -280,7 +280,7 @@ function MyTicketContent() {
             <div className="bg-surface-container-low rounded-2xl border border-outline-variant p-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
               <div>
                 <h3 className="text-xs font-bold text-on-surface">
-                  Kendala Akses Tiket?
+                  Kendala Akses Kupon?
                 </h3>
                 <p className="text-[11px] text-on-surface-variant mt-0.5">
                   Hubungi admin resmi Bhima Night Carnival untuk bantuan.
@@ -321,7 +321,7 @@ function MyTicketContent() {
                     {email}
                   </p>
                   <p className="text-[11px] text-on-surface-variant font-mono truncate">
-                    NIK: {nik} • {tickets.length} Tiket Ditemukan
+                    NIK: {nik} • {tickets.length} Kupon Ditemukan
                   </p>
                 </div>
               </div>

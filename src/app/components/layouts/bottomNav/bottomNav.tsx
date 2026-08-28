@@ -79,7 +79,7 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               local_activity
             </span>
           </div>
-          <span className="text-[10px] font-medium">My Ticket</span>
+          <span className="text-[10px] font-medium">My Coupon</span>
         </button>
       </div>
     </nav>

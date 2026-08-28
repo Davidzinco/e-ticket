@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   return (
     <ConsolAdminLayout
       title="Dashboard Ringkasan"
-      subtitle="Ringkasan Penjualan Tiket & Kehadiran BNC 2026"
+      subtitle="Ringkasan Penjualan Kupon & Kehadiran BNC 2026"
     >
       <ConsolAdminDashboardView />
     </ConsolAdminLayout>

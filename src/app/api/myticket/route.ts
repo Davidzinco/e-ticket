@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         data: matchedTickets,
-        message: `Ditemukan ${matchedTickets.length} tiket untuk akun Anda.`,
+        message: `Ditemukan ${matchedTickets.length} kupon untuk akun Anda.`,
       });
     }
 
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
               isPending: true,
               orderId: pData.order_id,
               message:
-                "Pembayaran tiket Anda masih berstatus 'PENDING'. Silakan selesaikan pembayaran terlebih dahulu.",
+                "Pembayaran kupon Anda masih berstatus 'PENDING'. Silakan selesaikan pembayaran terlebih dahulu.",
             },
             { status: 200 }
           );
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
       {
         success: false,
         message:
-          "Tiket tidak ditemukan. Pastikan kombinasi Email dan NIK yang Anda masukkan sudah benar dan sesuai saat pembelian.",
+          "Kupon tidak ditemukan. Pastikan kombinasi Email dan NIK yang Anda masukkan sudah benar dan sesuai saat pembelian.",
       },
       { status: 404 }
     );
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: "Terjadi kesalahan pada server saat memuat tiket.",
+        message: "Terjadi kesalahan pada server saat memuat kupon.",
       },
       { status: 500 }
     );

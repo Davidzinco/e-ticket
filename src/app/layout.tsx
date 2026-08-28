@@ -15,8 +15,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Bhimacrew | E-Ticket",
-  description: "Official E-Ticket Platform for Bhima Night Carnival",
+  title: "Bhimacrew | E-Coupon",
+  description: "Official E-Coupon Platform for Bhima Night Carnival",
   icons: {
     icon: "/images/smasa.ico",
   },

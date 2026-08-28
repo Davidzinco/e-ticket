@@ -21,12 +21,16 @@ async function testAdminFlow() {
 
   // 2. Test /api/myticket with secret admin credentials
   console.log("\n2. Testing /api/myticket with SECRET ADMIN credentials...");
+  const adminEmail = process.env.ADMIN_SECRET_EMAIL || "test_admin@example.com";
+  const adminNik = process.env.ADMIN_SECRET_NIK || "1234567890123456";
+  const adminAccessCode = process.env.ADMIN_ACCESS_CODE || "test_access_code";
+
   const adminMyTicketRes = await fetch(`${BASE_URL}/api/myticket`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      email: "admin@bnc.smasa.sch.id",
-      nik: "3519999999999999",
+      email: adminEmail,
+      nik: adminNik,
     }),
   });
   const adminMyTicketData = await adminMyTicketRes.json();
@@ -62,7 +66,7 @@ async function testAdminFlow() {
   const correctCodeRes = await fetch(`${BASE_URL}/api/admin/auth/verify-code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code: "BNC2026-ADMIN-PASS" }),
+    body: JSON.stringify({ code: adminAccessCode }),
   });
   const correctCodeData = await correctCodeRes.json();
   const verifyCookies = correctCodeRes.headers.get("set-cookie") || "";

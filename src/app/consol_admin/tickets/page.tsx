@@ -15,8 +15,8 @@ export default async function TicketsPage() {
 
   return (
     <ConsolAdminLayout
-      title="Data E-Tiket"
-      subtitle="Kelola dan Cari Data E-Tiket BNC 2026"
+      title="Data E-Kupon"
+      subtitle="Kelola dan Cari Data E-Kupon BNC 2026"
     >
       <ConsolAdminTicketsView />
     </ConsolAdminLayout>
