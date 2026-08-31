@@ -64,22 +64,26 @@ export default function ConsolAdminSettingsView() {
   const [pastedCodes, setPastedCodes] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"Festival" | "VIP" | "Coupon Festival">("Festival");
 
-  const handleImportDriveTickets = async (type: "paste" | "test") => {
+  const handleImportDriveTickets = async (type: "paste" | "test" | "pull_sheets") => {
     setIsImportingDrive(true);
     setDriveImportResult(null);
 
     try {
-      let ticketsToImport: Array<{ qr_code: string; kategori: string; event_name: string }> = [];
+      let bodyPayload: any = {};
 
-      if (type === "test") {
+      if (type === "pull_sheets") {
+        bodyPayload = { action: "pull_from_sheets" };
+      } else if (type === "test") {
         const sampleCode = `BNC-20260824-${Math.floor(100000 + Math.random() * 900000)}`;
-        ticketsToImport = [
-          {
-            qr_code: sampleCode,
-            kategori: selectedCategory,
-            event_name: `Bhima Night Carnival 2026 (${selectedCategory})`,
-          },
-        ];
+        bodyPayload = {
+          tickets: [
+            {
+              qr_code: sampleCode,
+              kategori: selectedCategory,
+              event_name: `Bhima Night Carnival 2026 (${selectedCategory})`,
+            },
+          ],
+        };
       } else {
         const rawLines = pastedCodes
           .split(/[\n,]+/)
@@ -92,17 +96,19 @@ export default function ConsolAdminSettingsView() {
           return;
         }
 
-        ticketsToImport = rawLines.map((code) => ({
-          qr_code: code,
-          kategori: selectedCategory,
-          event_name: `Bhima Night Carnival 2026 (${selectedCategory})`,
-        }));
+        bodyPayload = {
+          tickets: rawLines.map((code) => ({
+            qr_code: code,
+            kategori: selectedCategory,
+            event_name: `Bhima Night Carnival 2026 (${selectedCategory})`,
+          })),
+        };
       }
 
       const res = await fetch("/api/admin/import-drive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tickets: ticketsToImport }),
+        body: JSON.stringify(bodyPayload),
       });
 
       const data = await res.json();
@@ -192,6 +198,15 @@ export default function ConsolAdminSettingsView() {
 
           <div className="flex flex-wrap gap-2.5 pt-1">
             <button
+              onClick={() => handleImportDriveTickets("pull_sheets")}
+              disabled={isImportingDrive}
+              className="py-2 px-4 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer shadow-md disabled:opacity-50"
+              style={{ backgroundColor: "rgb(56, 105, 72)" }}
+            >
+              <span className="material-symbols-outlined text-base">cloud_download</span>
+              <span>Tarik Tiket dari Tab 'DATA DRIVE' Sheets ke Firebase</span>
+            </button>
+            <button
               onClick={() => handleImportDriveTickets("test")}
               disabled={isImportingDrive}
               className="py-2 px-3.5 rounded-xl border border-outline-variant text-xs font-bold hover:bg-surface-container transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
@@ -202,11 +217,10 @@ export default function ConsolAdminSettingsView() {
             <button
               onClick={() => handleImportDriveTickets("paste")}
               disabled={isImportingDrive || !pastedCodes.trim()}
-              className="py-2 px-4 rounded-xl text-on-primary text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-              style={{ backgroundColor: "rgb(56, 105, 72)" }}
+              className="py-2 px-4 rounded-xl border border-outline-variant text-xs font-bold flex items-center gap-1.5 hover:bg-surface-container transition-all cursor-pointer shadow-sm disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-base">publish</span>
-              <span>Import Kode ke Firebase</span>
+              <span>Import Kode yang Ditempel</span>
             </button>
           </div>
 

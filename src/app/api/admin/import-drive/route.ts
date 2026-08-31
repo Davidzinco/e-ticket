@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const token = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
     const isSessionAuth = verifyAdminSessionToken(token);
 
-    // Also support secret API key authentication from Google Apps Script
+    // Support secret API key authentication from Google Apps Script
     const secret = body.secret || req.headers.get("x-api-key") || "";
     const isSecretAuth =
       Boolean(secret) &&
@@ -45,25 +45,93 @@ export async function POST(req: NextRequest) {
         secret === process.env.ADMIN_ACCESS_CODE);
 
     if (!isSessionAuth && !isSecretAuth) {
-      // If running in development without strict secret, check if tickets array is valid
       const isDev = process.env.NODE_ENV !== "production";
       if (!isDev) {
         return NextResponse.json(
-          { success: false, message: "Unauthorized: Kredensial admin diperlukan." },
+          { success: false, message: "Unauthorized: Sesi admin diperlukan." },
           { status: 401 }
         );
       }
     }
 
-    const rawTickets: ImportTicketInput[] = Array.isArray(body.tickets)
-      ? body.tickets
-      : body.ticket
-      ? [body.ticket]
-      : [];
+    let rawTickets: ImportTicketInput[] = [];
+
+    // Mode A: Pull tickets directly from Google Sheets Tab "DATA DRIVE"
+    if (body.action === "pull_from_sheets") {
+      const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+      if (!webhookUrl || webhookUrl.trim() === "") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "GOOGLE_SHEETS_WEBHOOK_URL belum dikonfigurasi di .env",
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log(`[Import Drive] Pulling tickets from Google Sheets webhook: ${webhookUrl}`);
+      try {
+        // Apps Script doPost with action get_drive_tickets
+        const response = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "get_drive_tickets" }),
+          redirect: "follow",
+        });
+
+        const text = await response.text();
+        console.log(`[Import Drive] Raw Google Sheets response:`, text.substring(0, 300));
+        
+        let jsonResult: any = null;
+        try {
+          jsonResult = JSON.parse(text);
+        } catch {
+          // If response is HTML or plain text error
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Gagal membaca respon Google Sheets (kemungkinan script belum dideploy/diperbarui):\n${text.substring(0, 150)}`,
+            },
+            { status: 502 }
+          );
+        }
+
+        if (jsonResult && Array.isArray(jsonResult.tickets)) {
+          rawTickets = jsonResult.tickets;
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              message: jsonResult?.message || "Format data dari Google Sheets tidak sesuai.",
+            },
+            { status: 400 }
+          );
+        }
+      } catch (sheetErr) {
+        console.error("[Import Drive] Error fetching from Google Sheets:", sheetErr);
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Gagal terhubung ke Google Sheets Webhook: ${sheetErr instanceof Error ? sheetErr.message : String(sheetErr)}`,
+          },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Mode B: Direct array of tickets passed in body
+      rawTickets = Array.isArray(body.tickets)
+        ? body.tickets
+        : body.ticket
+        ? [body.ticket]
+        : [];
+    }
 
     if (rawTickets.length === 0) {
       return NextResponse.json(
-        { success: false, message: "Tidak ada data tiket yang dikirim." },
+        {
+          success: false,
+          message: "Tidak ada data tiket/kupon yang ditemukan untuk diimpor.",
+        },
         { status: 400 }
       );
     }
@@ -152,9 +220,13 @@ export async function POST(req: NextRequest) {
       await batch.commit();
     }
 
+    console.log(
+      `[Import Drive] Done! Total: ${rawTickets.length}, Inserted: ${insertedCount}, Updated: ${updatedCount}, Skipped: ${skippedCount}`
+    );
+
     return NextResponse.json({
       success: true,
-      message: `Proses import selesai: ${insertedCount} baru ditambahkan, ${updatedCount} diperbarui, ${skippedCount} dilewati.`,
+      message: `Berhasil mengimpor tiket ke Firebase! (${insertedCount} baru ditambahkan, ${updatedCount} status scan diperbarui, ${skippedCount} kupon lama dilewati)`,
       total: rawTickets.length,
       inserted: insertedCount,
       updated: updatedCount,

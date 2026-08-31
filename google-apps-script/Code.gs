@@ -3,14 +3,17 @@
  * 🎟️ E-TICKET SMASA — GOOGLE APPS SCRIPT (DRIVE & SHEETS INTEGRATION)
  * ============================================================================
  *
- * CARA PEMASANGAN:
+ * CARA PEMASANGAN & UPDATE:
  * 1. Buka Google Spreadsheet target.
  * 2. Klik menu "Ekstensi" (Extensions) > "Apps Script".
- * 3. Hapus semua kode default dan tempelkan seluruh kode ini.
- * 4. Sesuaikan konfigurasi WEB_APP_URL di bawah dengan domain web Anda.
- * 5. Simpan (Ctrl+S) dan klik "Terapkan" (Deploy) > "Kelola Penerapan" (Manage Deployments)
- *    atau "Penerapan Baru" (New Deployment) sebagai Web App (Akses: Anyone).
- * 6. Refresh spreadsheet Anda untuk melihat menu "🎟️ E-Ticket SMASA Tools".
+ * 3. Hapus semua kode lama dan tempelkan seluruh kode ini.
+ * 4. Simpan (Ctrl+S).
+ * 5. Klik "Terapkan" (Deploy) > "Kelola Penerapan" (Manage Deployments) >
+ *    Edit penerapan Web App (atau buat versi baru), pastikan:
+ *    - Jalankan sebagai: "Saya" (Me)
+ *    - Siapa yang memiliki akses: "Siapa saja" (Anyone)
+ *    Lalu klik "Terapkan" (Deploy).
+ * 6. Refresh halaman Google Spreadsheet Anda.
  */
 
 // ==========================================
@@ -21,12 +24,8 @@ const CONFIG = {
   TAB_DATA_DRIVE: "DATA DRIVE",
   TAB_WEBSITE_RESMI: "WEBSITE RESMI",
 
-  // URL API Web Next.js Anda (Ganti dengan URL production / Ngrok Anda)
-  // Contoh: "https://tiket.smasa.sch.id/api/admin/import-drive"
-  WEB_API_URL: "https://your-domain.com/api/admin/import-drive",
-
-  // Secret API Key opsional untuk keamanan tambahan
-  API_SECRET_KEY: "",
+  // URL API Web Next.js Anda (Opsional jika ingin push dari spreadsheet)
+  WEB_API_URL: "",
 
   // Konfigurasi Folder Google Drive dan Pemetaan Kategori
   DRIVE_FOLDERS: [
@@ -178,44 +177,27 @@ function menuScanDriveAndPopulate() {
 
   ui.alert(
     "✅ Pembacaan Google Drive Selesai!",
-    `Total file terdeteksi: ${totalFound}\nTiket baru ditambahkan: ${newAdded}\nTiket sebelumnya (skip): ${totalFound - newAdded}`,
+    `Total file terdeteksi: ${totalFound}\nTiket baru ditambahkan ke sheet: ${newAdded}\nTiket sebelumnya (skip): ${totalFound - newAdded}\n\n👉 Langkah berikutnya: Buka Console Admin Web Anda di menu Settings, lalu klik tombol 'Tarik Tiket dari Tab DATA DRIVE' untuk memasukkannya ke Firebase!`,
     ui.ButtonSet.OK
   );
 }
 
 /**
- * Menu 2: Mengirim Data dari Tab "DATA DRIVE" ke Backend Firebase
+ * Helper: Ambil seluruh data tiket dari Tab "DATA DRIVE"
  */
-function menuSyncDriveToFirebase() {
-  const ui = SpreadsheetApp.getUi();
+function getTicketsFromDataDriveSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(CONFIG.TAB_DATA_DRIVE);
 
   if (!sheet || sheet.getLastRow() <= 1) {
-    ui.alert("Peringatan", "Tab 'DATA DRIVE' masih kosong. Jalankan Menu 1 terlebih dahulu.", ui.ButtonSet.OK);
-    return;
-  }
-
-  let apiUrl = CONFIG.WEB_API_URL;
-  if (!apiUrl || apiUrl.includes("your-domain.com")) {
-    const input = ui.prompt(
-      "Konfigurasi URL Website",
-      "Masukkan URL website Anda (contoh: https://tiket.smasa.sch.id atau URL ngrok):",
-      ui.ButtonSet.OK_CANCEL
-    );
-    if (input.getSelectedButton() !== ui.Button.OK || !input.getResponseText().trim()) {
-      return;
-    }
-    apiUrl = input.getResponseText().trim().replace(/\/$/, "") + "/api/admin/import-drive";
+    return [];
   }
 
   const lastRow = sheet.getLastRow();
   const data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
-
   const tickets = [];
-  const rowIndices = [];
 
-  data.forEach((row, idx) => {
+  data.forEach((row) => {
     const kategori = row[1] || "Festival";
     const qrCode = String(row[2]).trim();
     const filename = row[3] || "";
@@ -231,13 +213,51 @@ function menuSyncDriveToFirebase() {
         isScanned: isScanned,
         scanned_at: scannedAt,
       });
-      rowIndices.push(idx + 2);
     }
   });
 
+  return tickets;
+}
+
+/**
+ * Menu 2: Mengirim Data dari Tab "DATA DRIVE" ke Backend Firebase secara Outbound
+ */
+function menuSyncDriveToFirebase() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.TAB_DATA_DRIVE);
+
+  if (!sheet || sheet.getLastRow() <= 1) {
+    ui.alert("Peringatan", "Tab 'DATA DRIVE' masih kosong. Jalankan Menu 1 terlebih dahulu.", ui.ButtonSet.OK);
+    return;
+  }
+
+  const tickets = getTicketsFromDataDriveSheet();
   if (tickets.length === 0) {
     ui.alert("Info", "Tidak ada kode tiket valid di tab 'DATA DRIVE'.", ui.ButtonSet.OK);
     return;
+  }
+
+  let apiUrl = CONFIG.WEB_API_URL;
+  if (!apiUrl || apiUrl.includes("your-domain.com")) {
+    const input = ui.prompt(
+      "Sinkronisasi ke Firebase",
+      "Masukkan URL website Anda (contoh: https://tiket.smasa.sch.id atau URL ngrok publik):\n\nCATATAN: Google Apps Script TIDAK BISA mengakses 'http://localhost:3000'. Jika menggunakan localhost, silakan gunakan tombol 'Tarik Tiket dari Google Sheets' di menu Console Admin web Anda.",
+      ui.ButtonSet.OK_CANCEL
+    );
+    if (input.getSelectedButton() !== ui.Button.OK || !input.getResponseText().trim()) {
+      return;
+    }
+    const enteredUrl = input.getResponseText().trim();
+    if (enteredUrl.includes("localhost") || enteredUrl.includes("127.0.0.1")) {
+      ui.alert(
+        "⚠️ Perhatian Localhost",
+        "Google Apps Script berjalan di server cloud Google sehingga tidak dapat membuka alamat 'localhost' di komputer Anda.\n\nSolusi:\n1. Buka Console Admin di browser (http://localhost:3000/consol_admin/settings)\n2. Klik tombol 'Tarik Tiket dari Google Sheets ke Firebase' di web Console Admin.",
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+    apiUrl = enteredUrl.replace(/\/$/, "") + "/api/admin/import-drive";
   }
 
   try {
@@ -246,7 +266,6 @@ function menuSyncDriveToFirebase() {
       contentType: "application/json",
       payload: JSON.stringify({
         tickets: tickets,
-        secret: CONFIG.API_SECRET_KEY,
       }),
       muteHttpExceptions: true,
     });
@@ -254,18 +273,29 @@ function menuSyncDriveToFirebase() {
     const responseCode = response.getResponseCode();
     const responseText = response.getContentText();
 
-    if (responseCode >= 200 && responseCode < 300) {
-      // Tandai status sync di spreadsheet
-      const statusValues = Array(rowIndices.length).fill(["Tersinkron"]);
-      sheet.getRange(2, 7, rowIndices.length, 1).setValues(statusValues);
+    let jsonResp;
+    try {
+      jsonResp = JSON.parse(responseText);
+    } catch {
+      jsonResp = null;
+    }
+
+    if (responseCode >= 200 && responseCode < 300 && jsonResp && jsonResp.success) {
+      const lastRow = sheet.getLastRow();
+      const statusValues = Array(lastRow - 1).fill(["Tersinkron"]);
+      sheet.getRange(2, 7, lastRow - 1, 1).setValues(statusValues);
 
       ui.alert(
         "🎉 Sukses Sinkronisasi Firebase!",
-        `Berhasil mengirim ${tickets.length} tiket ke database Firebase.\nSemua QR code sekarang aktif dan siap di-scan!`,
+        jsonResp.message || `Berhasil mengirim ${tickets.length} tiket ke database Firebase!`,
         ui.ButtonSet.OK
       );
     } else {
-      ui.alert("❌ Gagal Sinkronisasi", `Server merespon (HTTP ${responseCode}):\n${responseText}`, ui.ButtonSet.OK);
+      ui.alert(
+        "❌ Gagal Sinkronisasi",
+        `Server merespon (HTTP ${responseCode}):\n${responseText.substring(0, 300)}`,
+        ui.ButtonSet.OK
+      );
     }
   } catch (err) {
     ui.alert("❌ Terjadi Kesalahan Jaringan", err.toString(), ui.ButtonSet.OK);
@@ -274,13 +304,24 @@ function menuSyncDriveToFirebase() {
 
 /**
  * ============================================================================
- * 📡 WEBHOOK RECEIVER (doPost)
+ * 📡 WEBHOOK RECEIVER (doGet & doPost)
  * ============================================================================
- * Menangani:
- * 1. update_scan: Real-time scan dari Scanner Gate (/consol_admin/scan)
- *    Mencari di TAB 'WEBSITE RESMI' dan TAB 'DATA DRIVE'.
- * 2. Transaksi baru dari Website Resmi.
  */
+function doGet(e) {
+  const action = e && e.parameter ? e.parameter.action : "";
+  
+  if (action === "get_drive_tickets") {
+    const tickets = getTicketsFromDataDriveSheet();
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: true, count: tickets.length, tickets: tickets })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return ContentService.createTextOutput(
+    JSON.stringify({ success: true, message: "E-Ticket Google Apps Script is Running" })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) {
@@ -293,7 +334,17 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // ----------------------------------------------------
-    // KASUS 1: Real-time Scan Attendance Update (action === "update_scan")
+    // KASUS 1: Permintaan Data Tiket Drive dari Next.js Backend
+    // ----------------------------------------------------
+    if (rawData.action === "get_drive_tickets") {
+      const tickets = getTicketsFromDataDriveSheet();
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: true, count: tickets.length, tickets: tickets })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ----------------------------------------------------
+    // KASUS 2: Real-time Scan Attendance Update (action === "update_scan")
     // ----------------------------------------------------
     if (rawData.action === "update_scan") {
       const qrCode = String(rawData.qr_code || rawData.kode_tiket || "").trim();
@@ -323,7 +374,6 @@ function doPost(e) {
       if (!found) {
         const officialSheet = ss.getSheetByName(CONFIG.TAB_WEBSITE_RESMI);
         if (officialSheet && officialSheet.getLastRow() > 1) {
-          // Kolom 12 adalah Kode Tiket di WEBSITE RESMI
           const officialCodes = officialSheet.getRange(2, 12, officialSheet.getLastRow() - 1, 1).getValues();
           for (let j = 0; j < officialCodes.length; j++) {
             if (String(officialCodes[j][0]).trim() === qrCode) {
@@ -349,7 +399,7 @@ function doPost(e) {
     }
 
     // ----------------------------------------------------
-    // KASUS 2: Tiket Pembeli Baru dari Website Resmi
+    // KASUS 3: Tiket Pembeli Baru dari Website Resmi
     // ----------------------------------------------------
     const officialSheet = ss.getSheetByName(CONFIG.TAB_WEBSITE_RESMI) || ss.getSheets()[0];
     const items = Array.isArray(rawData) ? rawData : [rawData];
