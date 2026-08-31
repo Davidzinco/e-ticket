@@ -152,11 +152,13 @@ GOOGLE_SHEETS_WEBHOOK_URL=https://script.google.com/macros/s/AKfycbw-p9RZHlouOMh
 ```
 
 ### Tab Spreadsheet Target
-**"WEBSITE RESMI"** — Semua data tiket dari website harus masuk ke tab ini.
+1. **"WEBSITE RESMI"** — Semua data tiket dari transaksi online website masuk ke tab ini.
+2. **"DATA DRIVE"** — Data tiket offline/kupon dari file PDF Google Drive masuk ke tab ini via `google-apps-script/Code.gs`.
 
-### Dua Fungsi Sync (`src/libs/googleSheets.ts`)
-1. **`sendBuyerToGoogleSheets(items)`** — Kirim data tiket baru ke Sheets (dipanggil saat pembayaran berhasil)
-2. **`updateTicketScanInGoogleSheets(qrCode, scannedAt, isScanned)`** — Update status kehadiran real-time saat tiket di-scan
+### Fungsi Sync (`src/libs/googleSheets.ts` & `src/app/api/admin/import-drive/route.ts`)
+1. **`sendBuyerToGoogleSheets(items)`** — Kirim data tiket baru online ke Sheets (dipanggil saat pembayaran DOKU berhasil).
+2. **`updateTicketScanInGoogleSheets(qrCode, scannedAt, isScanned)`** — Update status kehadiran real-time saat tiket di-scan (otomatis mencari di kedua tab: `WEBSITE RESMI` & `DATA DRIVE`).
+3. **`POST /api/admin/import-drive`** — Batch import kupon/tiket dari tab `DATA DRIVE` ke Firestore `qr_detail`.
 
 ---
 
