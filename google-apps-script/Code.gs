@@ -14,6 +14,7 @@
  *    - Siapa yang memiliki akses: "Siapa saja" (Anyone)
  *    Lalu klik "Terapkan" (Deploy).
  * 6. Refresh halaman Google Spreadsheet Anda.
+ * 7. Klik menu "🎟️ E-Ticket SMASA Tools" > "⏰ Aktifkan Trigger Otomatis (Tiap 15 Menit)".
  */
 
 // ==========================================
@@ -24,8 +25,14 @@ const CONFIG = {
   TAB_DATA_DRIVE: "DATA DRIVE",
   TAB_WEBSITE_RESMI: "WEBSITE RESMI",
 
-  // URL API Web Next.js Anda (Opsional jika ingin push dari spreadsheet)
-  WEB_API_URL: "",
+  // URL API Web Production Anda (Vercel)
+  WEB_API_URL: "https://e-coupon-bnc.vercel.app/api/admin/import-drive",
+
+  // Kunci Rahasia untuk Autentikasi ke Backend Web (Sama dengan ADMIN_ACCESS_CODE di .env)
+  API_SECRET_KEY: "BNC2026@Gatepass",
+
+  // Interval Pemicu Otomatis (Menit): 10, 15, atau 30
+  TRIGGER_INTERVAL_MINUTES: 15,
 
   // Konfigurasi Folder Google Drive dan Pemetaan Kategori
   DRIVE_FOLDERS: [
@@ -56,9 +63,97 @@ function onOpen() {
     .addItem("1. 📂 Baca Google Drive & Isi Tab 'DATA DRIVE'", "menuScanDriveAndPopulate")
     .addItem("2. 🚀 Sinkronkan Tab 'DATA DRIVE' ke Firebase", "menuSyncDriveToFirebase")
     .addSeparator()
-    .addItem("3. 🛠️ Buat / Reset Header Tab 'DATA DRIVE'", "setupDataDriveSheet")
+    .addItem("⏰ Aktifkan Trigger Otomatis (Tiap 15 Menit)", "installAutoTrigger")
+    .addItem("🛑 Matikan Trigger Otomatis", "removeAutoTrigger")
+    .addSeparator()
+    .addItem("🛠️ Buat / Reset Header Tab 'DATA DRIVE'", "setupDataDriveSheet")
     .addToUi();
 }
+
+/**
+ * ============================================================================
+ * ⏰ CARA 1: TIME-DRIVEN TRIGGER (OTOMATIS TANPA KLIK)
+ * ============================================================================
+ */
+
+/**
+ * Memasang pemicu waktu otomatis (Time-driven Trigger).
+ * Menjalankan autoSyncDriveAndFirebase() setiap 15 menit secara background.
+ */
+function installAutoTrigger() {
+  const ui = SpreadsheetApp.getUi();
+  
+  // Hapus trigger lama terlebih dahulu agar tidak duplikat
+  removeExistingTriggers();
+
+  // Buat trigger baru setiap 15 menit
+  ScriptApp.newTrigger("autoSyncDriveAndFirebase")
+    .timeBased()
+    .everyMinutes(CONFIG.TRIGGER_INTERVAL_MINUTES)
+    .create();
+
+  console.log(`[Trigger] Pemicu otomatis berhasil dipasang setiap ${CONFIG.TRIGGER_INTERVAL_MINUTES} menit.`);
+  
+  ui.alert(
+    "✅ Trigger Otomatis Aktif! (Cara 1)",
+    `Sistem sekarang berjalan otomatis di latar belakang setiap ${CONFIG.TRIGGER_INTERVAL_MINUTES} menit:\n\n1. 📂 Memindai file PDF baru di Google Drive.\n2. 📄 Menambahkannya ke tab 'DATA DRIVE'.\n3. 🚀 Mengirim otomatis ke Firebase via Vercel API.\n\nAnda tidak perlu lagi mengklik menu manual!`,
+    ui.ButtonSet.OK
+  );
+}
+
+/**
+ * Menghapus/Mematikan pemicu otomatis
+ */
+function removeAutoTrigger() {
+  const ui = SpreadsheetApp.getUi();
+  const deletedCount = removeExistingTriggers();
+
+  console.log(`[Trigger] ${deletedCount} pemicu otomatis telah dimatikan.`);
+  ui.alert(
+    "🛑 Trigger Otomatis Dinonaktifkan",
+    "Pemicu waktu otomatis telah dimatikan. Anda tetap dapat menggunakan menu sinkronisasi secara manual.",
+    ui.ButtonSet.OK
+  );
+}
+
+/**
+ * Helper internal untuk menghapus trigger function autoSyncDriveAndFirebase
+ */
+function removeExistingTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let count = 0;
+  triggers.forEach((trigger) => {
+    if (trigger.getHandlerFunction() === "autoSyncDriveAndFirebase") {
+      ScriptApp.deleteTrigger(trigger);
+      count++;
+    }
+  });
+  return count;
+}
+
+/**
+ * FUNGSI UTAMA TRIGGER OTOMATIS:
+ * Dipanggil secara berkala oleh Google Cloud Scheduler.
+ * 1. Memindai Drive -> isi sheet.
+ * 2. Mengirim tiket yang berstatus 'Belum Sync' ke Firebase.
+ */
+function autoSyncDriveAndFirebase() {
+  console.log("[Auto-Trigger] Memulai sinkronisasi otomatis Google Drive & Firebase...");
+  
+  // 1. Pindai Google Drive dan masukkan ke Sheet
+  const scanResult = scanDriveInternal();
+  console.log(`[Auto-Trigger] Hasil Scan: ${scanResult.newAdded} tiket baru ditambahkan dari total ${scanResult.totalFound} file.`);
+
+  // 2. Kirim tiket yang belum tersinkron ke Firebase
+  const syncResult = pushUnsyncedTicketsToFirebase();
+  console.log(`[Auto-Trigger] Hasil Kirim Firebase: ${syncResult.syncedCount} tiket berhasil disinkronkan.`);
+}
+
+/**
+ * ============================================================================
+ * 🧹 HELPER & FUNGSI SCAN DRIVE
+ * ============================================================================
+ */
 
 /**
  * Helper: Membersihkan nama file PDF menjadi kode tiket bersih
@@ -112,12 +207,10 @@ function setupDataDriveSheet() {
 }
 
 /**
- * Menu 1: Memindai Folder Google Drive dan Mengisi Tab "DATA DRIVE"
+ * Logika internal pemindaian Drive tanpa alert UI (aman dipanggil oleh trigger)
  */
-function menuScanDriveAndPopulate() {
-  const ui = SpreadsheetApp.getUi();
+function scanDriveInternal() {
   const sheet = setupDataDriveSheet();
-  
   const lastRow = sheet.getLastRow();
   const existingCodes = new Set();
 
@@ -144,7 +237,6 @@ function menuScanDriveAndPopulate() {
         const file = files.next();
         const filename = file.getName();
 
-        // Hanya proses file PDF atau file tiket
         if (filename.toLowerCase().endsWith(".pdf") || filename.includes("BNC")) {
           totalFound++;
           const cleanCode = cleanTicketCode(filename);
@@ -170,16 +262,184 @@ function menuScanDriveAndPopulate() {
   if (newRows.length > 0) {
     const startRow = sheet.getLastRow() + 1;
     sheet.getRange(startRow, 1, newRows.length, newRows[0].length).setValues(newRows);
-    
-    // Set checkbox di kolom Kehadiran (Kolom 5 / E)
     sheet.getRange(startRow, 5, newRows.length, 1).insertCheckboxes();
   }
 
+  return { totalFound, newAdded };
+}
+
+/**
+ * Mengirim tiket yang berstatus 'Belum Sync' ke Firebase
+ */
+function pushUnsyncedTicketsToFirebase() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.TAB_DATA_DRIVE);
+
+  if (!sheet || sheet.getLastRow() <= 1) {
+    return { syncedCount: 0, message: "Tab kosong" };
+  }
+
+  const lastRow = sheet.getLastRow();
+  const data = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+
+  const ticketsToSend = [];
+  const targetRowIndices = [];
+
+  data.forEach((row, idx) => {
+    const kategori = row[1] || "Festival";
+    const qrCode = String(row[2]).trim();
+    const filename = row[3] || "";
+    const isScanned = Boolean(row[4]);
+    const scannedAt = row[5] || "-";
+    const syncStatus = String(row[6] || "").trim();
+
+    // Hanya kirim tiket yang belum tersinkron
+    if (qrCode && syncStatus !== "Tersinkron") {
+      ticketsToSend.push({
+        qr_code: qrCode,
+        kategori: kategori,
+        event_name: `Bhima Night Carnival 2026 (${kategori})`,
+        filename: filename,
+        isScanned: isScanned,
+        scanned_at: scannedAt,
+      });
+      targetRowIndices.push(idx + 2);
+    }
+  });
+
+  if (ticketsToSend.length === 0) {
+    return { syncedCount: 0, message: "Semua tiket sudah tersinkron" };
+  }
+
+  const apiUrl = CONFIG.WEB_API_URL;
+  if (!apiUrl || apiUrl.includes("your-domain.com")) {
+    console.warn("[Push] WEB_API_URL belum dikonfigurasi dengan benar.");
+    return { syncedCount: 0, message: "WEB_API_URL tidak valid" };
+  }
+
+  try {
+    const response = UrlFetchApp.fetch(apiUrl, {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        "x-api-key": CONFIG.API_SECRET_KEY,
+      },
+      payload: JSON.stringify({
+        secret: CONFIG.API_SECRET_KEY,
+        tickets: ticketsToSend,
+      }),
+      muteHttpExceptions: true,
+    });
+
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    let jsonResp;
+    try {
+      jsonResp = JSON.parse(responseText);
+    } catch {
+      jsonResp = null;
+    }
+
+    if (responseCode >= 200 && responseCode < 300 && jsonResp && jsonResp.success) {
+      // Tandai status sync di spreadsheet
+      targetRowIndices.forEach((rowIndex) => {
+        sheet.getRange(rowIndex, 7).setValue("Tersinkron");
+      });
+
+      return {
+        syncedCount: ticketsToSend.length,
+        message: `Berhasil menyinkronkan ${ticketsToSend.length} tiket ke Firebase.`,
+      };
+    } else {
+      console.error(`[Push] Gagal kirim ke backend (HTTP ${responseCode}): ${responseText}`);
+      return { syncedCount: 0, message: `Server error: ${responseText}` };
+    }
+  } catch (err) {
+    console.error("[Push] Error jaringan saat kirim ke Firebase:", err);
+    return { syncedCount: 0, message: err.toString() };
+  }
+}
+
+/**
+ * Menu 1: Versi Manual Pembacaan Google Drive
+ */
+function menuScanDriveAndPopulate() {
+  const ui = SpreadsheetApp.getUi();
+  const res = scanDriveInternal();
+
   ui.alert(
     "✅ Pembacaan Google Drive Selesai!",
-    `Total file terdeteksi: ${totalFound}\nTiket baru ditambahkan ke sheet: ${newAdded}\nTiket sebelumnya (skip): ${totalFound - newAdded}\n\n👉 Langkah berikutnya: Buka Console Admin Web Anda di menu Settings, lalu klik tombol 'Tarik Tiket dari Tab DATA DRIVE' untuk memasukkannya ke Firebase!`,
+    `Total file terdeteksi: ${res.totalFound}\nTiket baru ditambahkan ke sheet: ${res.newAdded}\nTiket lama yang dilewati: ${res.totalFound - res.newAdded}\n\nTiket baru berstatus 'Belum Sync'. Klik menu '2. Sinkronkan ke Firebase' atau biarkan Trigger Otomatis mengirimkannya.`,
     ui.ButtonSet.OK
   );
+}
+
+/**
+ * Menu 2: Versi Manual Sinkronisasi Seluruh Tiket ke Firebase
+ */
+function menuSyncDriveToFirebase() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.TAB_DATA_DRIVE);
+
+  if (!sheet || sheet.getLastRow() <= 1) {
+    ui.alert("Peringatan", "Tab 'DATA DRIVE' masih kosong. Jalankan Menu 1 terlebih dahulu.", ui.ButtonSet.OK);
+    return;
+  }
+
+  // Kirim semua tiket di tab DATA DRIVE
+  const tickets = getTicketsFromDataDriveSheet();
+  if (tickets.length === 0) {
+    ui.alert("Info", "Tidak ada kode tiket valid di tab 'DATA DRIVE'.", ui.ButtonSet.OK);
+    return;
+  }
+
+  const apiUrl = CONFIG.WEB_API_URL;
+  try {
+    const response = UrlFetchApp.fetch(apiUrl, {
+      method: "post",
+      contentType: "application/json",
+      headers: {
+        "x-api-key": CONFIG.API_SECRET_KEY,
+      },
+      payload: JSON.stringify({
+        secret: CONFIG.API_SECRET_KEY,
+        tickets: tickets,
+      }),
+      muteHttpExceptions: true,
+    });
+
+    const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
+
+    let jsonResp;
+    try {
+      jsonResp = JSON.parse(responseText);
+    } catch {
+      jsonResp = null;
+    }
+
+    if (responseCode >= 200 && responseCode < 300 && jsonResp && jsonResp.success) {
+      const lastRow = sheet.getLastRow();
+      const statusValues = Array(lastRow - 1).fill(["Tersinkron"]);
+      sheet.getRange(2, 7, lastRow - 1, 1).setValues(statusValues);
+
+      ui.alert(
+        "🎉 Sukses Sinkronisasi Firebase!",
+        jsonResp.message || `Berhasil mengirim ${tickets.length} tiket ke database Firebase!`,
+        ui.ButtonSet.OK
+      );
+    } else {
+      ui.alert(
+        "❌ Gagal Sinkronisasi",
+        `Server merespon (HTTP ${responseCode}):\n${responseText.substring(0, 300)}`,
+        ui.ButtonSet.OK
+      );
+    }
+  } catch (err) {
+    ui.alert("❌ Terjadi Kesalahan Jaringan", err.toString(), ui.ButtonSet.OK);
+  }
 }
 
 /**
@@ -217,89 +477,6 @@ function getTicketsFromDataDriveSheet() {
   });
 
   return tickets;
-}
-
-/**
- * Menu 2: Mengirim Data dari Tab "DATA DRIVE" ke Backend Firebase secara Outbound
- */
-function menuSyncDriveToFirebase() {
-  const ui = SpreadsheetApp.getUi();
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.TAB_DATA_DRIVE);
-
-  if (!sheet || sheet.getLastRow() <= 1) {
-    ui.alert("Peringatan", "Tab 'DATA DRIVE' masih kosong. Jalankan Menu 1 terlebih dahulu.", ui.ButtonSet.OK);
-    return;
-  }
-
-  const tickets = getTicketsFromDataDriveSheet();
-  if (tickets.length === 0) {
-    ui.alert("Info", "Tidak ada kode tiket valid di tab 'DATA DRIVE'.", ui.ButtonSet.OK);
-    return;
-  }
-
-  let apiUrl = CONFIG.WEB_API_URL;
-  if (!apiUrl || apiUrl.includes("your-domain.com")) {
-    const input = ui.prompt(
-      "Sinkronisasi ke Firebase",
-      "Masukkan URL website Anda (contoh: https://tiket.smasa.sch.id atau URL ngrok publik):\n\nCATATAN: Google Apps Script TIDAK BISA mengakses 'http://localhost:3000'. Jika menggunakan localhost, silakan gunakan tombol 'Tarik Tiket dari Google Sheets' di menu Console Admin web Anda.",
-      ui.ButtonSet.OK_CANCEL
-    );
-    if (input.getSelectedButton() !== ui.Button.OK || !input.getResponseText().trim()) {
-      return;
-    }
-    const enteredUrl = input.getResponseText().trim();
-    if (enteredUrl.includes("localhost") || enteredUrl.includes("127.0.0.1")) {
-      ui.alert(
-        "⚠️ Perhatian Localhost",
-        "Google Apps Script berjalan di server cloud Google sehingga tidak dapat membuka alamat 'localhost' di komputer Anda.\n\nSolusi:\n1. Buka Console Admin di browser (http://localhost:3000/consol_admin/settings)\n2. Klik tombol 'Tarik Tiket dari Google Sheets ke Firebase' di web Console Admin.",
-        ui.ButtonSet.OK
-      );
-      return;
-    }
-    apiUrl = enteredUrl.replace(/\/$/, "") + "/api/admin/import-drive";
-  }
-
-  try {
-    const response = UrlFetchApp.fetch(apiUrl, {
-      method: "post",
-      contentType: "application/json",
-      payload: JSON.stringify({
-        tickets: tickets,
-      }),
-      muteHttpExceptions: true,
-    });
-
-    const responseCode = response.getResponseCode();
-    const responseText = response.getContentText();
-
-    let jsonResp;
-    try {
-      jsonResp = JSON.parse(responseText);
-    } catch {
-      jsonResp = null;
-    }
-
-    if (responseCode >= 200 && responseCode < 300 && jsonResp && jsonResp.success) {
-      const lastRow = sheet.getLastRow();
-      const statusValues = Array(lastRow - 1).fill(["Tersinkron"]);
-      sheet.getRange(2, 7, lastRow - 1, 1).setValues(statusValues);
-
-      ui.alert(
-        "🎉 Sukses Sinkronisasi Firebase!",
-        jsonResp.message || `Berhasil mengirim ${tickets.length} tiket ke database Firebase!`,
-        ui.ButtonSet.OK
-      );
-    } else {
-      ui.alert(
-        "❌ Gagal Sinkronisasi",
-        `Server merespon (HTTP ${responseCode}):\n${responseText.substring(0, 300)}`,
-        ui.ButtonSet.OK
-      );
-    }
-  } catch (err) {
-    ui.alert("❌ Terjadi Kesalahan Jaringan", err.toString(), ui.ButtonSet.OK);
-  }
 }
 
 /**

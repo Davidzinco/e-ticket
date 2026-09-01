@@ -34,18 +34,28 @@ export async function GET(req: NextRequest) {
 
     // Apply search filter
     if (search) {
+      const cleanSearch = search
+        .replace(/\.pdf$/i, "")
+        .replace(/^e[-_]?ticket[-_]?/i, "")
+        .replace(/^e[-_]?coupon[-_]?/i, "")
+        .replace(/^e[-_]?kupon[-_]?/i, "")
+        .trim();
+
       tickets = tickets.filter((t: any) => {
         const name = String(t.name || "").toLowerCase();
         const email = String(t.email || "").toLowerCase();
         const nik = String(t.nik || "").toLowerCase();
         const orderId = String(t.order_id || "").toLowerCase();
         const qrCode = String(t.qr_code || "").toLowerCase();
+        const transactionId = String(t.transaction_id || "").toLowerCase();
         return (
           name.includes(search) ||
           email.includes(search) ||
           nik.includes(search) ||
           orderId.includes(search) ||
-          qrCode.includes(search)
+          qrCode.includes(search) ||
+          transactionId.includes(search) ||
+          (cleanSearch && qrCode.includes(cleanSearch))
         );
       });
     }

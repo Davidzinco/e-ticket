@@ -38,6 +38,41 @@ async function checkAdmin(req: NextRequest) {
   return null;
 }
 
+function cleanTicketCode(rawCode: string): string {
+  if (!rawCode) return "";
+  let code = rawCode.trim();
+
+  // If input is a URL, extract code from search params or path
+  if (code.startsWith("http://") || code.startsWith("https://")) {
+    try {
+      const parsedUrl = new URL(code);
+      const queryCode =
+        parsedUrl.searchParams.get("qrCode") ||
+        parsedUrl.searchParams.get("code") ||
+        parsedUrl.searchParams.get("qr");
+      if (queryCode) {
+        code = queryCode;
+      } else {
+        const segments = parsedUrl.pathname.split("/").filter(Boolean);
+        if (segments.length > 0) {
+          code = segments[segments.length - 1];
+        }
+      }
+    } catch {
+      // Keep original code if URL parsing fails
+    }
+  }
+
+  code = code.replace(/\.pdf$/i, "");
+  code = code.replace(/^e[-_]?ticket[-_]?/i, "");
+  code = code.replace(/^e[-_]?coupon[-_]?/i, "");
+  code = code.replace(/^e[-_]?kupon[-_]?/i, "");
+  code = code.replace(/^ticket[-_]?/i, "");
+  code = code.replace(/^coupon[-_]?/i, "");
+  code = code.replace(/^kupon[-_]?/i, "");
+  return code.trim();
+}
+
 export async function GET(req: NextRequest) {
   const session = await checkAdmin(req);
   if (!session) {
@@ -78,19 +113,52 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const res = await db
-      .collection("qr_detail")
-      .where("qr_code", "==", qrCode)
-      .get();
+    const cleanCode = cleanTicketCode(qrCode);
+    const candidateCodes = Array.from(
+      new Set([
+        qrCode,
+        cleanCode,
+        `E-Ticket-${cleanCode}`,
+        `E-Coupon-${cleanCode}`,
+        `Ticket-${cleanCode}`,
+        `Coupon-${cleanCode}`,
+      ])
+    ).filter(Boolean);
 
-    if (res.empty) {
+    let docSnap: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+    for (const code of candidateCodes) {
+      const snap = await db
+        .collection("qr_detail")
+        .where("qr_code", "==", code)
+        .limit(1)
+        .get();
+
+      if (!snap.empty) {
+        docSnap = snap.docs[0];
+        break;
+      }
+    }
+
+    // Fallback: check transaction_id for DRIVE- imports
+    if (!docSnap && cleanCode) {
+      const driveSnap = await db
+        .collection("qr_detail")
+        .where("transaction_id", "==", `DRIVE-${cleanCode}`)
+        .limit(1)
+        .get();
+
+      if (!driveSnap.empty) {
+        docSnap = driveSnap.docs[0];
+      }
+    }
+
+    if (!docSnap) {
       return NextResponse.json(
         { message: "Barcode Tidak Ditemukan" },
         { status: 404 }
       );
     }
-
-    const docSnap = res.docs[0];
     const data = {
       id: docSnap.id,
       ...docSnap.data(),
@@ -138,9 +206,12 @@ export async function GET(req: NextRequest) {
 
       // Sync scan status & time to Google Sheets in real-time
       if (data.qr_code) {
-        updateTicketScanInGoogleSheets(data.qr_code, dateFormat, true).catch((err) =>
-          console.error("Async Google Sheets scan update error:", err)
-        );
+        try {
+          const sheetRes = await updateTicketScanInGoogleSheets(data.qr_code, dateFormat, true);
+          console.log(`[QR Scan] Sheets sync result for ${data.qr_code}:`, sheetRes);
+        } catch (sheetErr) {
+          console.error("[QR Scan] Google Sheets sync error:", sheetErr);
+        }
       }
 
       return NextResponse.json(
