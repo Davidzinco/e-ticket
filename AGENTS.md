@@ -142,6 +142,7 @@ ADMIN_ACCESS_CODE=<your-private-access-code>
 ADMIN_SESSION_SECRET=<your-random-session-secret>
 ```
 
+
 ---
 
 ## 📊 Google Sheets Integration
