@@ -32,7 +32,7 @@ const CONFIG = {
   API_SECRET_KEY: "BNC2026@Gatepass",
 
   // Interval Pemicu Otomatis (Menit): 10, 15, atau 30
-  TRIGGER_INTERVAL_MINUTES: 15,
+  TRIGGER_INTERVAL_MINUTES: 10,
 
   // Konfigurasi Folder Google Drive dan Pemetaan Kategori
   DRIVE_FOLDERS: [

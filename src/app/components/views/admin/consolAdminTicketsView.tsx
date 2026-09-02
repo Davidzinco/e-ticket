@@ -2,11 +2,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
 import QRCode from "qrcode";
+import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 export default function ConsolAdminTicketsView() {
   const [tickets, setTickets] = useState<QrCodeInterface[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedTicket, setSelectedTicket] = useState<QrCodeInterface | null>(null);
@@ -52,6 +54,59 @@ export default function ConsolAdminTicketsView() {
     }
   };
 
+  const exportToExcel = () => {
+    if (tickets.length === 0) {
+      toast.error("Tidak ada data tiket untuk diunduh.");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const rows = tickets.map((t, idx) => ({
+        No: idx + 1,
+        "Waktu Transaksi": t.transaction_time || "-",
+        "Nama Pemilik": t.name || "-",
+        NIK: t.nik || "-",
+        Email: t.email || "-",
+        "Kode Tiket / QR": t.qr_code || "-",
+        Kategori: t.event_name || "Festival",
+        "Order ID": t.order_id || "-",
+        "Status Kehadiran": t.isScanned ? "Sudah Masuk (Scanned)" : "Belum Scan",
+        "Waktu Scan": t.scanned_at || "-",
+        "Petugas Gate": t.scanned_by || "-",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+
+      // Auto-fit column widths
+      worksheet["!cols"] = [
+        { wch: 6 },  // No
+        { wch: 22 }, // Waktu Transaksi
+        { wch: 25 }, // Nama Pemilik
+        { wch: 20 }, // NIK
+        { wch: 28 }, // Email
+        { wch: 26 }, // Kode Tiket / QR
+        { wch: 26 }, // Kategori
+        { wch: 20 }, // Order ID
+        { wch: 24 }, // Status Kehadiran
+        { wch: 20 }, // Waktu Scan
+        { wch: 22 }, // Petugas Gate
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data Tiket BNC 2026");
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `Data_Tiket_BNC_2026_${todayStr}.xlsx`);
+      toast.success("File Excel (.xlsx) berhasil diunduh!");
+    } catch (err) {
+      console.error("Export Excel error:", err);
+      toast.error("Gagal mengekspor data tiket ke Excel.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Search & Filter Bar */}
@@ -93,10 +148,24 @@ export default function ConsolAdminTicketsView() {
 
       {/* Tickets List Table */}
       <div className="bg-surface rounded-2xl border border-outline-variant p-5 sm:p-6 ambient-shadow space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-sm sm:text-base text-on-surface">
-            Data E-Kupon ({tickets.length} Kupon)
-          </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="font-extrabold text-sm sm:text-base text-on-surface">
+              Data E-Kupon ({tickets.length} Kupon)
+            </h3>
+            <p className="text-xs text-on-surface-variant">
+              Kelola, cari, dan unduh data tiket pengunjung dalam format Excel.
+            </p>
+          </div>
+          <button
+            onClick={exportToExcel}
+            disabled={isExporting || tickets.length === 0}
+            className="py-2.5 px-4 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer"
+            style={{ backgroundColor: "rgb(56, 105, 72)" }}
+          >
+            <span className="material-symbols-outlined text-base">download</span>
+            <span>{isExporting ? "Mengekspor..." : "Download Data (.xlsx / Excel)"}</span>
+          </button>
         </div>
 
         {isLoading ? (

@@ -235,11 +235,15 @@ DEFAULT_EMAIL_PASSWORD_ADMIN=<gmail app password>
 - `sendBuyerToGoogleSheets()` — kirim tiket baru
 - `updateTicketScanInGoogleSheets()` — update kehadiran real-time
 
+### 5. Export Data Tiket Excel (.xlsx)
+- Tombol `Download Data (.xlsx / Excel)` di `/consol_admin/tickets`
+- Menggunakan library `xlsx` untuk mengekspor data tiket lengkap beserta status scan dan kolom terformat rapi.
+
 ---
 
 ## 🚨 Known Issues & Gotchas
 
-1. **DOKU Webhook Domain** — Saat testing lokal, DOKU tidak bisa mengirim webhook ke `localhost`. Gunakan ngrok / tunnel publik.
+~1. **DOKU Webhook Domain** — Saat testing lokal, DOKU tidak bisa mengirim webhook ke `localhost`. Gunakan ngrok / tunnel publik.~
 2. **Google Apps Script POST** — harus `text/plain` content type + `redirect: follow`, bukan `application/json`.
 3. **Middleware convention** — Next.js 16.3.1 menampilkan warning bahwa `middleware.ts` deprecated, diganti `proxy`.
 4. **Git Push Restriction** — Jangan pernah melakukan `git push` tanpa izin langsung dari pengguna.
