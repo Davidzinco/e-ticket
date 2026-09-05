@@ -3,6 +3,7 @@ import Header from "@/app/components/layouts/header/header";
 import BottomNav from "@/app/components/layouts/bottomNav/bottomNav";
 import Content from "@/app/components/ui/bnc_2025/content";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Bnc2025View({
   detailEvent,
@@ -33,13 +34,13 @@ export default function Bnc2025View({
           <p className="text-on-surface-variant text-xs mb-6">
             Terjadi kendala saat menghubungkan ke sistem kupon.
           </p>
-          <a
+          <Link
             href="/"
             className="inline-block py-3 px-6 rounded-xl bg-primary text-on-primary font-bold text-xs hover:opacity-90 transition-all shadow-md"
             style={{ backgroundColor: "rgb(56, 105, 72)" }}
           >
             Kembali ke Beranda
-          </a>
+          </Link>
         </div>
       </div>
     );

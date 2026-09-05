@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/libs/firebase/admin";
 import { QrCodeInterface } from "@/app/components/interfaces/qrCode";
-import { isSuccessStatus, isPendingStatus, isFailedStatus, mapDokuStatus } from "@/libs/payments/status";
+import { isSuccessStatus, isPendingStatus, mapDokuStatus } from "@/libs/payments/status";
 import { checkDokuOrderStatus } from "@/libs/payments/doku";
 import { issueTicketsForOrder } from "@/libs/tickets/issueTickets";
 import { releaseStock } from "@/libs/tickets/stock";

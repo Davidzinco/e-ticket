@@ -78,9 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Server-side Bypass check (Only allowed in non-production)
-    const isServerBypassEnv =
-      process.env.PAYMENT_BYPASS === "true" ||
-      process.env.NEXT_PUBLIC_BYPASS_MIDTRANS === "true"; // temporary fallback
+    const isServerBypassEnv = process.env.PAYMENT_BYPASS === "true";
     const isNonProduction = process.env.NODE_ENV !== "production";
     const isBypassMode =
       isNonProduction && (isServerBypassEnv || bypassPayment === true);

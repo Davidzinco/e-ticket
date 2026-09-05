@@ -21,7 +21,9 @@ export default function successPage() {
             Kembali ke Beranda
           </Link>
           <Link
-            href="https://wa.me/+6289680575400"
+            href={`https://wa.me/${(process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "6289680575400").replace(/[^0-9]/g, "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="border-2 rounded-xl bg-green-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-green-500/80 max-sm:py-2"
           >
             Hubungi Panitia

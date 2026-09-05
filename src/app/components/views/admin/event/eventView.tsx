@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 import React from "react";
 
 export default function EventView() {
-  const { data, loading, error } = useGetEvent();
+  const { data, error } = useGetEvent();
   const { data: sessionData } = useSession();
   const session: SessionInterface = sessionData as SessionInterface;
 

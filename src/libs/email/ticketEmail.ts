@@ -81,7 +81,6 @@ export async function sendTicketEmail(
       eventName,
       eventTimestamp,
       eventLocation = "SMAN 1 Madiun",
-      eventImageSrc,
       qrCodes,
     } = params;
 

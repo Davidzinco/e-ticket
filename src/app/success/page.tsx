@@ -6,17 +6,6 @@ import Header from "../components/layouts/header/header";
 import BottomNav from "../components/layouts/bottomNav/bottomNav";
 import TicketCard from "../components/ui/ticketCard";
 import { QrCodeInterface } from "../components/interfaces/qrCode";
-import { toast } from "sonner";
-
-interface OrderData {
-  order_id: string;
-  status: string;
-  email?: string;
-  nik?: string;
-  transaction_id?: string;
-  transaction_time?: string;
-  payment_type?: string;
-}
 
 export default function SuccessPage() {
   return (
@@ -53,7 +42,6 @@ function SuccessContent() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [order, setOrder] = useState<OrderData | null>(null);
   const [tickets, setTickets] = useState<QrCodeInterface[]>([]);
   const [pollCount, setPollCount] = useState<number>(0);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
@@ -75,7 +63,6 @@ function SuccessContent() {
         const data = await res.json();
 
         if (res.ok && data.success) {
-          setOrder(data.order || null);
           setOrderStatus(data.status || data.order?.status || "settlement");
 
           if (Array.isArray(data.tickets) && data.tickets.length > 0) {
@@ -107,7 +94,6 @@ function SuccessContent() {
           }
         } else {
           setOrderStatus(data.status || urlStatus || "unknown");
-          setOrder(data.order || null);
           setTickets([]);
           setErrorMessage(data.message || "Gagal mengambil data tiket.");
           setIsProcessing(false);
@@ -273,7 +259,7 @@ function SuccessContent() {
                   href="/myticket"
                   className="py-3 px-4 border border-outline-variant text-on-surface rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-surface-container transition-all text-center"
                 >
-                  <span className="material-symbols-outlined text-sm">confirmation_number</span> Lihat di "Kupon Saya"
+                  <span className="material-symbols-outlined text-sm">confirmation_number</span> Lihat di &quot;Kupon Saya&quot;
                 </Link>
               </div>
 
@@ -325,7 +311,7 @@ function SuccessContent() {
                 href="/myticket"
                 className="flex-1 py-3 px-4 border border-outline-variant text-on-surface rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-surface-container text-center"
               >
-                Cek di "Kupon Saya"
+                Cek di &quot;Kupon Saya&quot;
               </Link>
             </div>
           </div>
@@ -384,8 +370,9 @@ function SuccessContent() {
                 Kembali ke Beranda
               </Link>
               <Link
-                href="https://wa.me/+6289680575400"
+                href={`https://wa.me/${(process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "6289680575400").replace(/[^0-9]/g, "")}`}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="flex-1 py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 text-center shadow-md"
                 style={{ backgroundColor: "rgb(56, 105, 72)" }}
               >
@@ -414,7 +401,7 @@ function SuccessContent() {
                 className="flex-1 py-3 px-4 text-on-primary rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:opacity-90 transition-all text-center shadow-md"
                 style={{ backgroundColor: "rgb(56, 105, 72)" }}
               >
-                <span className="material-symbols-outlined text-sm">search</span> Cari Kupon di "Kupon Saya"
+                <span className="material-symbols-outlined text-sm">search</span> Cari Kupon di &quot;Kupon Saya&quot;
               </Link>
               <Link
                 href="/"

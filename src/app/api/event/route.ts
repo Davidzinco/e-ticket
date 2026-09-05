@@ -3,7 +3,6 @@ import { db } from "@/libs/firebase/admin";
 import { releaseStock } from "@/libs/tickets/stock";
 import {
   retrieveData,
-  retrieveDataByFieldAdmin,
   retrieveDataById,
 } from "@/libs/firebase/service";
 import { NextRequest, NextResponse } from "next/server";
